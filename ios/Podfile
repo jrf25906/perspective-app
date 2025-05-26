@@ -1,0 +1,30 @@
+# Uncomment the next line to define a global platform for your project
+platform :ios, '14.0'
+
+target 'Perspective' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+
+  # Pods for Perspective
+  pod 'Alamofire', '~> 5.6'
+  pod 'SwiftyJSON', '~> 5.0'
+  pod 'Kingfisher', '~> 7.0'
+  pod 'KeychainAccess', '~> 4.2'
+
+  target 'PerspectiveTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+  target 'PerspectiveUITests' do
+    # Pods for testing
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+    end
+  end
+end
