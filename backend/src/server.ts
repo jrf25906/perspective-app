@@ -5,6 +5,11 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
+// Import routes
+import authRoutes from './routes/authRoutes';
+import challengeRoutes from './routes/challengeRoutes';
+import profileRoutes from './routes/profileRoutes';
+
 dotenv.config();
 
 const app = express();
@@ -33,7 +38,7 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
@@ -42,10 +47,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be added here
-// app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/perspectives', require('./routes/perspectives'));
-// app.use('/api/users', require('./routes/users'));
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/challenges', challengeRoutes);
+app.use('/api/profile', profileRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -58,7 +63,7 @@ app.use('*', (req, res) => {
 });
 
 // Error handling middleware
-app.use((error, req, res, next) => {
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(error.stack);
   
   const status = error.status || 500;

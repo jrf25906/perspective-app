@@ -1,0 +1,56 @@
+// Core Data Model - Create this file in Xcode
+// Entities:
+
+// UserEntity
+// - id: Integer 32
+// - email: String
+// - username: String
+// - firstName: String (Optional)
+// - lastName: String (Optional)
+// - echoScore: Double
+// - currentStreak: Integer 32
+// - lastActivityDate: Date (Optional)
+// - biasProfileData: Binary Data (Optional)
+// - createdAt: Date
+// - updatedAt: Date
+
+// ChallengeEntity
+// - id: Integer 32
+// - type: String
+// - title: String
+// - prompt: String
+// - contentData: Binary Data
+// - difficultyLevel: Integer 32
+// - isCompleted: Boolean
+// - completedAt: Date (Optional)
+// - userAnswer: String (Optional)
+// - isCorrect: Boolean
+// - timeSpent: Integer 32
+// - createdAt: Date
+
+// NewsArticleEntity
+// - id: Integer 32
+// - title: String
+// - content: String
+// - source: String
+// - author: String (Optional)
+// - url: String
+// - imageUrl: String (Optional)
+// - biasRating: Double
+// - category: String (Optional)
+// - publishedAt: Date
+// - isRead: Boolean
+// - readAt: Date (Optional)
+// - createdAt: Date
+
+// EchoScoreHistoryEntity
+// - id: Integer 32
+// - totalScore: Double
+// - diversityScore: Double
+// - accuracyScore: Double
+// - switchSpeedScore: Double
+// - consistencyScore: Double
+// - improvementScore: Double
+// - scoreDate: Date
+// - calculationDetailsData: Binary Data
+// - createdAt: Date 
