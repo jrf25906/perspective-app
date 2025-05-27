@@ -17,6 +17,8 @@ Node.js Express backend API server for the Perspective App providing authenticat
 
 ## Quick Start
 
+> **Note:** These instructions are for the backend REST API server only.
+
 1. Install dependencies:
    ```bash
    npm install
