@@ -5,6 +5,9 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+const challengeRoutes = require('./routes/challengeRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -44,6 +47,8 @@ app.get('/health', (req, res) => {
 // app.use('/api/auth', require('./routes/auth'));
 // app.use('/api/perspectives', require('./routes/perspectives'));
 // app.use('/api/users', require('./routes/users'));
+app.use('/challenge', challengeRoutes);
+app.use('/profile', profileRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
