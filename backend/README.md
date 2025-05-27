@@ -1,5 +1,32 @@
 # Backend API Server
 
+# Perspective Daily Challenge Loop - Proof of Concept
+
+The current MVP focus for the Perspective backend is the **Daily Challenge Loop**, as outlined in the [Perspective PRD v2](link-to-prd). This proof of concept implements the core API functionality to power the daily challenge experience.
+
+**Tech Stack:** Node.js, Express, PostgreSQL, JWT, Knex.js, Joi, Docker, and related tools.
+
+**First Deliverable:** A cross-platform API to:
+- Fetch today's challenge
+- Submit user answers
+- Provide instant feedback
+
+The API is designed to support upcoming features such as Echo Score, streak tracking, adaptive challenge routing, and user profiles. For the full product vision and roadmap, refer to the [PRD](link-to-prd).
+
+# Backend API Server
+
+## Product Vision & Differentiators
+
+**Perspective** bridges live news, cognitive training, and gamified tracking to foster critical thinking and self-awareness.
+
+**Key Differentiators:**
+- Content ↔ Reflection loop at the core of the experience
+- Unique Echo Score metric for cognitive feedback
+- Habit system and streaks for engagement
+- Personal bias profile generation
+- Safe, guided micro-debates and community forums
+- Material 3-inspired UX for modern, accessible design
+
 ## Overview
 
 Node.js Express backend API server for the Perspective App providing authentication, data management, and business logic.
@@ -14,6 +41,10 @@ Node.js Express backend API server for the Perspective App providing authenticat
 - File upload support
 - Docker containerization
 - Comprehensive testing
+- Daily Challenge Loop (fetch/submit)
+- Echo Score and streak endpoints (planned)
+- Adaptive challenge routing (planned)
+- Community debate/micro-forum endpoints (planned)
 
 ## Quick Start
 
@@ -100,16 +131,16 @@ Copy `.env.example` to `.env` and configure:
 
 ```
 src/
-├── controllers/     # Route handlers
-├── middleware/      # Express middleware
-├── models/         # Database models
-├── routes/         # Route definitions
-├── services/       # Business logic
-├── utils/          # Utility functions
-└── server.js       # Application entry point
+├── controllers/         # Route handlers (e.g., challenges logic in challengeController.js/.ts)
+├── middleware/          # Express middleware
+├── models/              # Database models
+├── routes/              # API endpoints for challenge and profile
+├── services/            # Business logic (Echo Score logic planned for echoScoreService.js)
+├── utils/               # Utility functions
+└── server.js            # Application entry point
 
-migrations/         # Database migrations
-tests/             # Test files
+migrations/              # Database migrations
+tests/                   # Test files
 ```
 
 ## Development
@@ -118,3 +149,9 @@ tests/             # Test files
 - Write tests for new features
 - Follow RESTful API conventions
 - Document API changes
+
+## References
+
+- [Perspective PRD v2](link-to-prd)
+- [Design System Documentation](link-to-design-system)
+- Brand assets and full UX/UI guidelines are available upon request.
