@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../src/server');
+const app = require('../dist/server').default;
 
 describe('Server', () => {
   test('Health check endpoint should return 200', async () => {
