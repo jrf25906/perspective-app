@@ -5,6 +5,7 @@ import biasRatingService from '../services/biasRatingService';
 import newsIntegrationService from '../services/newsIntegrationService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import db from '../db';
+import contentIngestionScheduler from '../services/contentIngestionScheduler';
 
 const router = Router();
 
@@ -386,6 +387,69 @@ router.post('/curate/topic', async (req: AuthenticatedRequest, res: Response) =>
   } catch (error) {
     console.error('Error curating content:', error);
     res.status(500).json({ error: 'Failed to curate content' });
+  }
+});
+
+// Ingestion Scheduler Endpoints
+router.get('/ingestion/status', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const status = await contentIngestionScheduler.getStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting ingestion status:', error);
+    res.status(500).json({ error: 'Failed to get ingestion status' });
+  }
+});
+
+router.post('/ingestion/run', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { topics } = req.body;
+    
+    const result = await contentIngestionScheduler.runIngestion(topics);
+    
+    res.json({
+      message: 'Ingestion completed',
+      result,
+    });
+  } catch (error) {
+    console.error('Error running ingestion:', error);
+    res.status(500).json({ error: 'Failed to run ingestion' });
+  }
+});
+
+router.post('/ingestion/start', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    contentIngestionScheduler.start();
+    res.json({ message: 'Ingestion scheduler started' });
+  } catch (error) {
+    console.error('Error starting scheduler:', error);
+    res.status(500).json({ error: 'Failed to start scheduler' });
+  }
+});
+
+router.post('/ingestion/stop', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    contentIngestionScheduler.stop();
+    res.json({ message: 'Ingestion scheduler stopped' });
+  } catch (error) {
+    console.error('Error stopping scheduler:', error);
+    res.status(500).json({ error: 'Failed to stop scheduler' });
+  }
+});
+
+router.put('/ingestion/config', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const config = req.body;
+    
+    await contentIngestionScheduler.saveConfig(config);
+    
+    res.json({ 
+      message: 'Ingestion configuration updated',
+      config: (await contentIngestionScheduler.getStatus()).config,
+    });
+  } catch (error) {
+    console.error('Error updating config:', error);
+    res.status(500).json({ error: 'Failed to update configuration' });
   }
 });
 

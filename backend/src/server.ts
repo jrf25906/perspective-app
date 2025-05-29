@@ -14,6 +14,7 @@ import profileRoutes from './routes/profileRoutes';
 import adminRoutes from './routes/adminRoutes';
 import contentRoutes from './routes/contentRoutes';
 import echoScoreRoutes from './routes/echoScoreRoutes';
+import contentIngestionScheduler from './services/contentIngestionScheduler';
 
 dotenv.config();
 
@@ -112,6 +113,16 @@ app.get('/health', async (req, res) => {
     uptime: process.uptime(),
     memory: process.memoryUsage()
   });
+});
+
+// Initialize content ingestion scheduler
+contentIngestionScheduler.initialize({
+  enabled: process.env.ENABLE_AUTO_INGESTION === 'true',
+  schedule: process.env.INGESTION_SCHEDULE || '0 */6 * * *', // Default: every 6 hours
+}).then(() => {
+  console.log('Content ingestion scheduler initialized');
+}).catch(error => {
+  console.error('Failed to initialize content ingestion scheduler:', error);
 });
 
 // Main API routes
