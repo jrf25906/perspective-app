@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../middleware/auth';
+import { generateToken, AuthenticatedRequest } from '../middleware/auth';
 import { CreateUserRequest, LoginRequest, User } from '../models/User';
 import { UserService } from '../services/UserService';
 
