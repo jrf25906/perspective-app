@@ -16,7 +16,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+    - name: Install CocoaPods
+      run: |
+        sudo gem install cocoapods
+    - name: Install iOS dependencies
+      run: |
+        cd ios
+        pod install --repo-update
     - name: Build
-      run: swift build -v
+      run: |
+        xcodebuild -workspace ios/Perspective.xcworkspace \
+                   -scheme perspective \
+                   -sdk iphonesimulator \
+                   -destination 'platform=iOS Simulator,name=iPhone 14' \
+                   build
     - name: Run tests
-      run: swift test -v
+      run: |
+        xcodebuild -workspace ios/Perspective.xcworkspace \
+                   -scheme perspective \
+                   -sdk iphonesimulator \
+                   -destination 'platform=iOS Simulator,name=iPhone 14' \
+                   test
