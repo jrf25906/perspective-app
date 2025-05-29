@@ -28,6 +28,8 @@ export interface ChallengeOption {
   explanation?: string;
 }
 
+import { NewsArticle } from './NewsArticle';
+
 export interface ChallengeContent {
   articles?: NewsArticle[];
   scenario?: string;
