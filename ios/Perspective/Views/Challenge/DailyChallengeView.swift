@@ -107,19 +107,19 @@ class DailyChallengeViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func submitChallenge(answer: String) {
+    func submitChallenge(answer: Any) {
         guard let apiService = apiService,
               let challenge = currentChallenge,
               let startTime = startTime else { return }
         
-        let timeSpent = Int(Date().timeIntervalSince(startTime))
+        let timeSpentSeconds = Int(Date().timeIntervalSince(startTime))
         
         isLoading = true
         
         apiService.submitChallenge(
             challengeId: challenge.id,
-            userAnswer: answer,
-            timeSpent: timeSpent
+            answer: answer,
+            timeSpentSeconds: timeSpentSeconds
         )
         .receive(on: DispatchQueue.main)
         .sink(

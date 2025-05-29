@@ -94,24 +94,39 @@ class APIService: ObservableObject {
     
     func getTodayChallenge() -> AnyPublisher<Challenge, APIError> {
         return makeAuthenticatedRequest(
-            endpoint: "/challenges/today",
+            endpoint: "/challenge/today",
             method: "GET",
             responseType: Challenge.self
         )
     }
     
-    func submitChallenge(challengeId: Int, userAnswer: String, timeSpent: Int) -> AnyPublisher<ChallengeResult, APIError> {
-        let response = UserResponse(
-            challengeId: challengeId,
-            userAnswer: userAnswer,
-            timeSpentSeconds: timeSpent
+    func submitChallenge(challengeId: Int, answer: Any, timeSpentSeconds: Int) -> AnyPublisher<ChallengeResult, APIError> {
+        let submission = ChallengeSubmission(
+            answer: AnyCodable(answer),
+            timeSpentSeconds: timeSpentSeconds
         )
         
         return makeAuthenticatedRequest(
-            endpoint: "/challenges/\(challengeId)/submit",
+            endpoint: "/challenge/\(challengeId)/submit",
             method: "POST",
-            body: response,
+            body: submission,
             responseType: ChallengeResult.self
+        )
+    }
+    
+    func getChallengeStats() -> AnyPublisher<ChallengeStats, APIError> {
+        return makeAuthenticatedRequest(
+            endpoint: "/challenge/stats",
+            method: "GET",
+            responseType: ChallengeStats.self
+        )
+    }
+    
+    func getLeaderboard(timeframe: String = "weekly") -> AnyPublisher<[LeaderboardEntry], APIError> {
+        return makeAuthenticatedRequest(
+            endpoint: "/challenge/leaderboard?timeframe=\(timeframe)",
+            method: "GET",
+            responseType: [LeaderboardEntry].self
         )
     }
     

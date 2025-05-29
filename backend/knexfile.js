@@ -1,7 +1,21 @@
 require('dotenv').config();
 
+const dbClient = process.env.DB_CLIENT || 'postgresql';
+
 module.exports = {
-  development: {
+  development: dbClient === 'sqlite3' ? {
+    client: 'sqlite3',
+    connection: {
+      filename: './dev.sqlite3'
+    },
+    useNullAsDefault: true,
+    migrations: {
+      directory: './migrations'
+    },
+    seeds: {
+      directory: './seeds'
+    }
+  } : {
     client: 'postgresql',
     connection: {
       host: process.env.DB_HOST || 'localhost',
