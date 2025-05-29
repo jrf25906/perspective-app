@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../src/server"; // adjust import to your Express app
+import app from "../dist/server";
 
 describe("GET /challenge/today", () => {
   it("should return today's challenge", async () => {

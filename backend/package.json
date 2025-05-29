@@ -2,18 +2,20 @@
   "name": "perspective-backend",
   "version": "1.0.0",
   "description": "Backend API server for Perspective App",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "build": "tsc",
+    "start": "npm run build && node dist/server.js",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "pretest": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "migrate": "knex migrate:latest",
     "migrate:rollback": "knex migrate:rollback",
     "seed": "knex seed:run",
-    "lint": "eslint src/**/*.js",
-    "lint:fix": "eslint src/**/*.js --fix"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "api",
@@ -45,7 +47,9 @@
     "supertest": "^6.3.3",
     "eslint": "^8.55.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.29.0"
+    "eslint-plugin-import": "^2.29.0",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
   },
   "engines": {
     "node": ">=18.0.0",

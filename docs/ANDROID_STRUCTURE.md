@@ -1,3 +1,8 @@
+# Android Project Structure
+
+This document outlines the directory layout for the native Android implementation used by the Perspective App.
+
+```text
 perspective-android/
 ├── app/
 │   ├── src/
@@ -28,3 +33,4 @@ perspective-android/
 │   │   └── test/
 │   └── build.gradle.kts
 └── gradle/
+```

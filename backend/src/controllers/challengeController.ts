@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import { DailyChallenge } from "../models/dailyChallenge";
 
 // Stub: In-memory challenge for MVP
@@ -15,12 +14,12 @@ const todayChallenge: DailyChallenge = {
 };
 
 // GET /challenge/today
-export const getTodayChallenge = (req: Request, res: Response) => {
+export const getTodayChallenge = (req: any, res: any) => {
   res.json(todayChallenge);
 };
 
 // POST /challenge/:id/submit
-export const submitChallenge = (req: Request, res: Response) => {
+export const submitChallenge = (req: any, res: any) => {
   const { optionId } = req.body;
   const correct = optionId === todayChallenge.correctOptionId;
   res.json({
