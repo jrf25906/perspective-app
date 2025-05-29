@@ -71,3 +71,4 @@
 - Ensure all prerequisites are installed
 - Check that ports 3000 (backend) and 8080 (mobile) are available
 - Verify environment variables are set correctly
+- If Xcode reports `The sandbox is not in sync with the Podfile.lock`, open a terminal, change to the `ios` directory and run `pod install`. Then open `Perspective.xcworkspace` instead of the Xcode project file.
