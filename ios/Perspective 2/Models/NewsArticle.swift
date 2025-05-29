@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct NewsArticle: Codable, Identifiable {
     let id: Int
