@@ -1,9 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import requestLogger from './middleware/requestLogger';
+import errorHandler from './middleware/errorHandler';
 
 // Import routes that actually exist
 import authRoutes from './routes/authRoutes';
@@ -95,19 +97,7 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request ID and timing middleware
-app.use((req: any, res: any, next: any) => {
-  const requestId = Math.random().toString(36).substring(2, 15);
-  req.headers['x-request-id'] = requestId;
-  res.setHeader('X-Request-ID', requestId);
-  
-  const startTime = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    console.log(`[${requestId}] ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
-  });
-  
-  next();
-});
+app.use(requestLogger);
 
 // Health check with basic information
 app.get('/health', async (req, res) => {
@@ -154,29 +144,7 @@ app.use('*', (req, res) => {
 });
 
 // Enhanced error handling middleware
-app.use((error: any, req: Request, res: Response, next: any) => {
-  console.error(`[${req.headers['x-request-id']}] Error:`, error.stack);
-  
-  const status = error.status || 500;
-  const message = error.message || 'Internal Server Error';
-  
-  // Don't expose sensitive error details in production
-  const errorResponse: any = {
-    error: {
-      code: error.code || 'INTERNAL_ERROR',
-      message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
-      timestamp: new Date().toISOString(),
-      requestId: req.headers['x-request-id']
-    }
-  };
-
-  // Add stack trace in development
-  if (process.env.NODE_ENV === 'development') {
-    errorResponse.error.stack = error.stack;
-  }
-  
-  (res as any).status(status).json(errorResponse);
-});
+app.use(errorHandler);
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
