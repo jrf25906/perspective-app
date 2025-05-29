@@ -3,6 +3,8 @@
 ## Overview
 
 Native iOS application for the Perspective App built with Swift and UIKit/SwiftUI.
+Older prototype projects have been removed to avoid confusion; the `Perspective`
+directory now contains the sole maintained iOS implementation.
 
 ## Features
 
