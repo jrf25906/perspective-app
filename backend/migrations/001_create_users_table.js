@@ -13,6 +13,7 @@ exports.up = function(knex) {
     table.string('avatar_url');
     table.boolean('is_active').defaultTo(true);
     table.boolean('email_verified').defaultTo(false);
+    table.timestamp('last_login_at');
     table.timestamps(true, true);
   });
 };
