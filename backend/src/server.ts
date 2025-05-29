@@ -11,6 +11,9 @@ import errorHandler from './middleware/errorHandler';
 import authRoutes from './routes/authRoutes';
 import challengeRoutes from './routes/challengeRoutes';
 import profileRoutes from './routes/profileRoutes';
+import adminRoutes from './routes/adminRoutes';
+import contentRoutes from './routes/contentRoutes';
+import echoScoreRoutes from './routes/echoScoreRoutes';
 
 dotenv.config();
 
@@ -115,6 +118,9 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/content', contentRoutes);
+app.use('/api/echo-score', echoScoreRoutes);
 
 // Maintenance mode middleware (can be enabled via environment variable)
 app.use((req: any, res: any, next: any) => {
