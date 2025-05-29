@@ -121,3 +121,9 @@ fastlane/test_output
 
 # Build outputs
 dist/
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+dev.sqlite3

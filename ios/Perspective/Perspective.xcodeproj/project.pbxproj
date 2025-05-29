@@ -29,9 +29,22 @@
 		50DF64A52DE61E7600A265DC /* perspectiveUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = perspectiveUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		50F257282DE91C4F00FFB1F0 /* Exceptions for "perspective" folder in "perspective" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 50DF64882DE61E7500A265DC /* perspective */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		50DF648B2DE61E7500A265DC /* perspective */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				50F257282DE91C4F00FFB1F0 /* Exceptions for "perspective" folder in "perspective" target */,
+			);
 			path = perspective;
 			sourceTree = "<group>";
 		};
@@ -186,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 50DF64842DE61E7500A265DC /* Build configuration list for PBXProject "perspective" */;
+			buildConfigurationList = 50DF64842DE61E7500A265DC /* Build configuration list for PBXProject "Perspective" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -521,7 +534,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		50DF64842DE61E7500A265DC /* Build configuration list for PBXProject "perspective" */ = {
+		50DF64842DE61E7500A265DC /* Build configuration list for PBXProject "Perspective" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				50DF64AD2DE61E7600A265DC /* Debug */,
