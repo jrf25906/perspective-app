@@ -127,3 +127,4 @@ dist/
 *.sqlite3
 *.db
 dev.sqlite3
+android/app/google-services.json

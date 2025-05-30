@@ -9,6 +9,13 @@ class OfflineDataManager: ObservableObject {
     @Published var isOnline = true
     @Published var pendingSyncCount = 0
     
+    private let userPreferencesManager: UserPreferencesManager
+    private let cacheManager: CacheManager
+    private let syncManager: SyncManager
+    
+    // Re-export UserPreferences for backward compatibility
+    typealias UserPreferences = UserPreferencesManager.UserPreferences
+    
     // MARK: - UserDefaults Keys
     private enum UserDefaultsKeys {
         static let cachedChallenges = "cached_challenges"
@@ -51,8 +58,15 @@ class OfflineDataManager: ObservableObject {
     }
     
     init() {
+        self.userPreferencesManager = UserPreferencesManager()
+        self.cacheManager = CacheManager()
+        self.syncManager = SyncManager(cacheManager: cacheManager, apiService: APIService.shared)
+        
+        // Bind sync manager's pending count
+        syncManager.$pendingSyncCount
+            .assign(to: &$pendingSyncCount)
+        
         setupNetworkMonitoring()
-        updatePendingSyncCount()
     }
     
     // MARK: - Network Monitoring
@@ -63,321 +77,110 @@ class OfflineDataManager: ObservableObject {
             .sink { [weak self] isConnected in
                 self?.isOnline = isConnected
                 if isConnected {
-                    self?.syncPendingData()
+                    self?.syncManager.syncPendingData()
                 }
             }
             .store(in: &cancellables)
     }
     
-    // MARK: - User Preferences Storage
+    // MARK: - User Preferences (Delegated)
     
     func saveUserPreferences(_ preferences: UserPreferences) {
-        do {
-            let data = try JSONEncoder().encode(preferences)
-            UserDefaults.standard.set(data, forKey: UserDefaultsKeys.userPreferences)
-            print("User preferences saved successfully")
-        } catch {
-            print("Failed to save user preferences: \(error)")
-        }
+        userPreferencesManager.saveUserPreferences(preferences)
     }
     
     func getUserPreferences() -> UserPreferences {
-        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKeys.userPreferences) else {
-            return UserPreferences() // Return default preferences
-        }
-        
-        do {
-            return try JSONDecoder().decode(UserPreferences.self, from: data)
-        } catch {
-            print("Failed to decode user preferences: \(error)")
-            return UserPreferences() // Return default preferences on error
-        }
+        return userPreferencesManager.getUserPreferences()
     }
     
     func updatePreference<T: Codable>(_ keyPath: WritableKeyPath<UserPreferences, T>, value: T) {
-        var preferences = getUserPreferences()
-        preferences[keyPath: keyPath] = value
-        saveUserPreferences(preferences)
+        userPreferencesManager.updatePreference(keyPath, value: value)
     }
     
-    // MARK: - Challenge Response Management
+    func setOfflineModeEnabled(_ enabled: Bool) {
+        userPreferencesManager.setOfflineModeEnabled(enabled)
+    }
+    
+    func isOfflineModeEnabled() -> Bool {
+        return userPreferencesManager.isOfflineModeEnabled()
+    }
+    
+    // MARK: - Challenge Response Management (Delegated)
     
     func saveChallengeResponse(challengeId: Int, userAnswer: String, timeSpent: Int, isCorrect: Bool) {
-        let response = ChallengeResponse(
+        syncManager.saveChallengeResponse(
             challengeId: challengeId,
             userAnswer: userAnswer,
             timeSpent: timeSpent,
             isCorrect: isCorrect,
-            submittedAt: Date(),
-            syncStatus: isOnline ? .synced : .pending
+            isOnline: isOnline
         )
-        
-        var responses = getChallengeResponses()
-        responses.append(response)
-        saveChallengeResponses(responses)
-        
-        if !isOnline {
-            updatePendingSyncCount()
-        }
-        
-        print("Challenge response saved: \(challengeId), sync status: \(response.syncStatus)")
     }
     
-    private func getChallengeResponses() -> [ChallengeResponse] {
-        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKeys.challengeResponses) else {
-            return []
-        }
-        
-        do {
-            return try JSONDecoder().decode([ChallengeResponse].self, from: data)
-        } catch {
-            print("Failed to decode challenge responses: \(error)")
-            return []
-        }
-    }
-    
-    private func saveChallengeResponses(_ responses: [ChallengeResponse]) {
-        do {
-            let data = try JSONEncoder().encode(responses)
-            UserDefaults.standard.set(data, forKey: UserDefaultsKeys.challengeResponses)
-        } catch {
-            print("Failed to save challenge responses: \(error)")
-        }
-    }
-    
-    // MARK: - Challenge Caching
+    // MARK: - Challenge Caching (Delegated)
     
     func getCachedChallenge() -> Challenge? {
-        let challenges = getCachedChallenges()
-        return challenges.randomElement()
+        return cacheManager.getCachedChallenge()
     }
     
     func getCachedChallenges() -> [Challenge] {
-        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedChallenges) else {
-            return []
-        }
-        
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode([Challenge].self, from: data)
-        } catch {
-            print("Failed to decode cached challenges: \(error)")
-            return []
-        }
+        return cacheManager.getCachedChallenges()
     }
     
     func cacheChallenge(_ challenge: Challenge) {
-        var challenges = getCachedChallenges()
-        
-        // Remove existing challenge with same ID if it exists
-        challenges.removeAll { $0.id == challenge.id }
-        
-        // Add the new/updated challenge
-        challenges.append(challenge)
-        
-        // Keep only the most recent 50 challenges to manage storage
-        if challenges.count > 50 {
-            challenges = Array(challenges.suffix(50))
-        }
-        
-        saveChallenges(challenges)
-        print("Challenge cached: \(challenge.id)")
+        cacheManager.cacheChallenge(challenge)
     }
     
     func cacheChallenges(_ challenges: [Challenge]) {
-        saveChallenges(challenges)
-        print("Challenges cached: \(challenges.count)")
+        cacheManager.cacheChallenges(challenges)
     }
     
-    private func saveChallenges(_ challenges: [Challenge]) {
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(challenges)
-            UserDefaults.standard.set(data, forKey: UserDefaultsKeys.cachedChallenges)
-        } catch {
-            print("Failed to save cached challenges: \(error)")
-        }
-    }
-    
-    // MARK: - News Article Caching
+    // MARK: - News Article Caching (Delegated)
     
     func cacheNewsArticles(_ articles: [NewsArticle]) {
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(articles)
-            UserDefaults.standard.set(data, forKey: UserDefaultsKeys.cachedNewsArticles)
-            print("Articles cached: \(articles.count)")
-        } catch {
-            print("Failed to cache news articles: \(error)")
-        }
+        cacheManager.cacheNewsArticles(articles)
     }
     
     func getCachedNewsArticles() -> [NewsArticle] {
-        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedNewsArticles) else {
-            return []
-        }
-        
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode([NewsArticle].self, from: data)
-        } catch {
-            print("Failed to decode cached news articles: \(error)")
-            return []
-        }
+        return cacheManager.getCachedNewsArticles()
     }
     
     func getCachedNewsArticles(category: String? = nil, limit: Int? = nil) -> [NewsArticle] {
-        var articles = getCachedNewsArticles()
-        
-        // Filter by category if specified
-        if let category = category {
-            articles = articles.filter { $0.category == category }
-        }
-        
-        // Sort by publish date (most recent first)
-        articles.sort { $0.publishedAt > $1.publishedAt }
-        
-        // Limit results if specified
-        if let limit = limit {
-            articles = Array(articles.prefix(limit))
-        }
-        
-        return articles
+        return cacheManager.getCachedNewsArticles(category: category, limit: limit)
     }
     
-    // MARK: - Echo Score History Caching
+    // MARK: - Echo Score History Caching (Delegated)
     
     func cacheEchoScoreHistory(_ history: [EchoScoreHistory]) {
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(history)
-            UserDefaults.standard.set(data, forKey: UserDefaultsKeys.cachedEchoScoreHistory)
-            print("Echo score history cached: \(history.count)")
-        } catch {
-            print("Failed to cache echo score history: \(error)")
-        }
+        cacheManager.cacheEchoScoreHistory(history)
     }
     
     func getCachedEchoScoreHistory() -> [EchoScoreHistory] {
-        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedEchoScoreHistory) else {
-            return []
-        }
-        
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode([EchoScoreHistory].self, from: data)
-        } catch {
-            print("Failed to decode cached echo score history: \(error)")
-            return []
-        }
+        return cacheManager.getCachedEchoScoreHistory()
     }
     
     func getLatestEchoScore() -> EchoScoreHistory? {
-        let history = getCachedEchoScoreHistory()
-        return history.max(by: { $0.scoreDate < $1.scoreDate })
+        return cacheManager.getLatestEchoScore()
     }
     
     func getEchoScoreHistory(limit: Int? = nil) -> [EchoScoreHistory] {
-        var history = getCachedEchoScoreHistory()
-        
-        // Sort by score date (most recent first)
-        history.sort { $0.scoreDate > $1.scoreDate }
-        
-        // Limit results if specified
-        if let limit = limit {
-            history = Array(history.prefix(limit))
-        }
-        
-        return history
+        return cacheManager.getEchoScoreHistory(limit: limit)
     }
     
-    // MARK: - Sync Management
-    
-    private func updatePendingSyncCount() {
-        let responses = getChallengeResponses()
-        let pendingCount = responses.filter { $0.syncStatus == .pending }.count
-        
-        DispatchQueue.main.async {
-            self.pendingSyncCount = pendingCount
-        }
-    }
-    
-    private func syncPendingData() {
-        guard isOnline else { return }
-        
-        syncPendingChallengeResponses()
-        updateLastSyncDate()
-        
-        DispatchQueue.main.async {
-            self.pendingSyncCount = 0
-        }
-    }
-    
-    private func syncPendingChallengeResponses() {
-        var responses = getChallengeResponses()
-        let pendingResponses = responses.filter { $0.syncStatus == .pending }
-        
-        // Mark pending responses as synced (in a real app, you'd send them to the server)
-        for i in responses.indices {
-            if responses[i].syncStatus == .pending {
-                responses[i] = ChallengeResponse(
-                    challengeId: responses[i].challengeId,
-                    userAnswer: responses[i].userAnswer,
-                    timeSpent: responses[i].timeSpent,
-                    isCorrect: responses[i].isCorrect,
-                    submittedAt: responses[i].submittedAt,
-                    syncStatus: .synced
-                )
-            }
-        }
-        
-        saveChallengeResponses(responses)
-        print("Synced \(pendingResponses.count) pending challenge responses")
-    }
-    
-    private func updateLastSyncDate() {
-        UserDefaults.standard.set(Date(), forKey: UserDefaultsKeys.lastSyncDate)
-    }
+    // MARK: - Sync Management (Delegated)
     
     func getLastSyncDate() -> Date? {
-        return UserDefaults.standard.object(forKey: UserDefaultsKeys.lastSyncDate) as? Date
+        return syncManager.getLastSyncDate()
     }
     
-    // MARK: - Cache Management
+    // MARK: - Cache Management (Delegated)
     
     func clearAllCache() {
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cachedChallenges)
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cachedNewsArticles)
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cachedEchoScoreHistory)
-        print("All cache cleared")
+        cacheManager.clearAllCache()
+        syncManager.clearPendingData()
     }
     
     func getCacheSize() -> Int {
-        let challengesData = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedChallenges)
-        let articlesData = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedNewsArticles)
-        let echoData = UserDefaults.standard.data(forKey: UserDefaultsKeys.cachedEchoScoreHistory)
-        let responsesData = UserDefaults.standard.data(forKey: UserDefaultsKeys.challengeResponses)
-        
-        return (challengesData?.count ?? 0) + 
-               (articlesData?.count ?? 0) + 
-               (echoData?.count ?? 0) + 
-               (responsesData?.count ?? 0)
-    }
-    
-    // MARK: - Offline Mode
-    
-    func setOfflineModeEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: UserDefaultsKeys.offlineMode)
-        updatePreference(\.offlineModeEnabled, value: enabled)
-    }
-    
-    func isOfflineModeEnabled() -> Bool {
-        return UserDefaults.standard.bool(forKey: UserDefaultsKeys.offlineMode)
+        return cacheManager.getCacheSize()
     }
 }
