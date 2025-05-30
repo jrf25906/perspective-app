@@ -186,4 +186,49 @@ export const getChallengeHistory = async (req: any, res: any) => {
   }
 };
 
+// POST /challenge
+export const createChallenge = async (req: Request, res: Response) => {
+  try {
+    const challenge = await challengeService.createChallenge(req.body);
+    res.status(201).json(challenge);
+  } catch (error) {
+    console.error('Error creating challenge:', error);
+    res.status(500).json({ error: 'Failed to create challenge' });
+  }
+};
+
+// PUT /challenge/:id
+export const updateChallenge = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updated = await challengeService.updateChallenge(id, req.body);
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating challenge:', error);
+    res.status(500).json({ error: 'Failed to update challenge' });
+  }
+};
+
+// DELETE /challenge/:id
+export const deleteChallenge = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const deleted = await challengeService.deleteChallenge(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting challenge:', error);
+    res.status(500).json({ error: 'Failed to delete challenge' });
+  }
+};
+
 // TODO: Add more endpoints as needed

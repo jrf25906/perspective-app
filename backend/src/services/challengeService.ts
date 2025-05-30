@@ -42,8 +42,45 @@ export class ChallengeService {
     const challenge = await db('challenges')
       .where('id', challengeId)
       .first();
-    
+
     return challenge || null;
+  }
+
+  /**
+   * Create a new challenge
+   */
+  async createChallenge(data: Partial<Challenge>): Promise<Challenge> {
+    const [challenge] = await db('challenges')
+      .insert(data)
+      .returning('*');
+
+    return challenge;
+  }
+
+  /**
+   * Update an existing challenge
+   */
+  async updateChallenge(id: number, data: Partial<Challenge>): Promise<Challenge | null> {
+    const [updated] = await db('challenges')
+      .where('id', id)
+      .update({
+        ...data,
+        updated_at: db.fn.now()
+      })
+      .returning('*');
+
+    return updated || null;
+  }
+
+  /**
+   * Delete a challenge
+   */
+  async deleteChallenge(id: number): Promise<boolean> {
+    const deleted = await db('challenges')
+      .where('id', id)
+      .del();
+
+    return deleted > 0;
   }
 
   /**

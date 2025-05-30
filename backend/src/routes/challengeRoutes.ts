@@ -7,7 +7,10 @@ import {
   getAdaptiveChallenge,
   getAdaptiveRecommendations,
   getUserProgress,
-  getChallengeHistory
+  getChallengeHistory,
+  createChallenge,
+  updateChallenge,
+  deleteChallenge
 } from "../controllers/challengeController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -24,5 +27,10 @@ router.get("/stats", authenticateToken, getChallengeStats);
 
 // Public routes
 router.get("/leaderboard", getLeaderboard);
+
+// Management routes
+router.post("/", authenticateToken, createChallenge);
+router.put("/:id", authenticateToken, updateChallenge);
+router.delete("/:id", authenticateToken, deleteChallenge);
 
 export default router;
