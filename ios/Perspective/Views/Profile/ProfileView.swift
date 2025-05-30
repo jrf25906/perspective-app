@@ -20,13 +20,13 @@ struct ProfileView: View {
                     )
                     
                     // Stats Grid
-                    ProfileStatsGridView()
+                    ProfileStatsGridView(stats: viewModel.challengeStats)
                     
                     // Streak Card
                     StreakCardView()
                     
                     // Achievements Section
-                    AchievementsSection()
+                    AchievementsSection(achievements: viewModel.earnedAchievements)
                     
                     // Settings Section
                     SettingsSection()
@@ -57,14 +57,15 @@ struct ProfileView: View {
             }
         }
         .onAppear {
-            viewModel.loadProfileData()
+            viewModel.setup(apiService: apiService)
         }
     }
 }
 
 struct ProfileStatsGridView: View {
     @EnvironmentObject var apiService: APIService
-    
+    let stats: ChallengeStats?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Your Stats")
@@ -88,14 +89,14 @@ struct ProfileStatsGridView: View {
                 
                 StatCard(
                     title: "Challenges",
-                    value: "0", // TODO: Get from backend
+                    value: String(stats?.totalCompleted ?? 0),
                     icon: "brain.head.profile",
                     color: .purple
                 )
-                
+
                 StatCard(
                     title: "Accuracy",
-                    value: "0%", // TODO: Calculate from challenges
+                    value: String(format: "%.0f%%", stats?.averageAccuracy ?? 0),
                     icon: "target",
                     color: .green
                 )
@@ -213,54 +214,23 @@ struct StreakVisualization: View {
 }
 
 struct AchievementsSection: View {
+    let achievements: [Achievement]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Achievements")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
-                AchievementBadge(
-                    title: "First Steps",
-                    icon: "foot.2",
-                    isEarned: true,
-                    description: "Complete your first challenge"
-                )
-                
-                AchievementBadge(
-                    title: "Streak Master",
-                    icon: "flame",
-                    isEarned: false,
-                    description: "Maintain a 7-day streak"
-                )
-                
-                AchievementBadge(
-                    title: "Echo Hunter",
-                    icon: "target",
-                    isEarned: false,
-                    description: "Reach Echo Score of 100"
-                )
-                
-                AchievementBadge(
-                    title: "Perspective Pro",
-                    icon: "eye.circle",
-                    isEarned: false,
-                    description: "Complete 50 challenges"
-                )
-                
-                AchievementBadge(
-                    title: "Logic Master",
-                    icon: "puzzlepiece",
-                    isEarned: false,
-                    description: "Complete 10 logic puzzles"
-                )
-                
-                AchievementBadge(
-                    title: "Bias Buster",
-                    icon: "arrow.left.arrow.right",
-                    isEarned: false,
-                    description: "Complete 10 bias swap challenges"
-                )
+                ForEach(achievements) { achievement in
+                    AchievementBadge(
+                        title: achievement.title,
+                        icon: achievement.icon,
+                        isEarned: achievement.isEarned,
+                        description: achievement.description
+                    )
+                }
             }
         }
     }
@@ -350,15 +320,41 @@ struct SettingsRow: View {
 
 class ProfileViewModel: ObservableObject {
     @Published var isLoading = false
-    
+    @Published var challengeStats: ChallengeStats?
+    @Published var earnedAchievements: [Achievement] = []
+
+    private var apiService: APIService?
+    private var cancellables = Set<AnyCancellable>()
+
+    func setup(apiService: APIService) {
+        self.apiService = apiService
+        loadProfileData()
+    }
+
     func loadProfileData() {
-        // TODO: Load additional profile data like challenge stats, achievements
+        guard let apiService = apiService else { return }
+
         isLoading = true
-        
-        // Simulate loading
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isLoading = false
-        }
+
+        Publishers.Zip(
+            apiService.getChallengeStats(),
+            apiService.getAchievements()
+        )
+        .receive(on: DispatchQueue.main)
+        .sink(
+            receiveCompletion: { [weak self] completion in
+                if case .failure(let error) = completion {
+                    print("Profile load error: \(error)")
+                }
+                self?.isLoading = false
+            },
+            receiveValue: { [weak self] stats, achievements in
+                self?.challengeStats = stats
+                self?.earnedAchievements = achievements
+                self?.isLoading = false
+            }
+        )
+        .store(in: &cancellables)
     }
 }
 

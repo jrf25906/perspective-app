@@ -148,6 +148,15 @@ class APIService: ObservableObject {
             responseType: [LeaderboardEntry].self
         )
     }
+
+    func getAchievements() -> AnyPublisher<[Achievement], APIError> {
+        return makeAuthenticatedRequest(
+            endpoint: "/profile/achievements",
+            method: "GET",
+            body: Optional<String>.none,
+            responseType: [Achievement].self
+        )
+    }
     
     // MARK: - Echo Score
     
