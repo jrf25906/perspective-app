@@ -9,6 +9,7 @@ import {
 } from '../models/Challenge';
 import { User } from '../models/User';
 import { addDays, startOfDay, differenceInDays, isYesterday, isToday } from 'date-fns';
+import adaptiveChallengeService from './adaptiveChallengeService';
 
 export class ChallengeService {
   /**
@@ -63,77 +64,10 @@ export class ChallengeService {
       return await this.getChallengeById(existingSelection.selected_challenge_id);
     }
     
-    // Select a new challenge based on user performance
-    const challenge = await this.selectAdaptiveChallenge(userId);
+    // Use adaptive challenge service to select a new challenge
+    const challenge = await adaptiveChallengeService.getNextChallengeForUser(userId);
     
-    if (challenge) {
-      // Record the selection
-      await db('daily_challenge_selections').insert({
-        user_id: userId,
-        selected_challenge_id: challenge.id,
-        selection_date: today,
-        selection_reason: challenge.selectionReason || 'adaptive',
-        difficulty_adjustment: challenge.difficultyAdjustment || 0
-      });
-    }
-    
-    return challenge;
-  }
-
-  /**
-   * Select an adaptive challenge based on user performance
-   */
-  private async selectAdaptiveChallenge(userId: number): Promise<any> {
-    const stats = await this.getUserChallengeStats(userId);
-    const recentSubmissions = await this.getRecentSubmissions(userId, 7);
-    
-    // Determine appropriate difficulty
-    let targetDifficulty = DifficultyLevel.INTERMEDIATE;
-    let difficultyAdjustment = 0;
-    
-    if (stats.total_completed === 0) {
-      // New user, start with beginner
-      targetDifficulty = DifficultyLevel.BEGINNER;
-    } else {
-      // Calculate success rate
-      const successRate = stats.total_correct / stats.total_completed;
-      
-      if (successRate > 0.8 && recentSubmissions.length >= 3) {
-        // User is doing very well, increase difficulty
-        targetDifficulty = DifficultyLevel.ADVANCED;
-        difficultyAdjustment = 1;
-      } else if (successRate < 0.4) {
-        // User is struggling, decrease difficulty
-        targetDifficulty = DifficultyLevel.BEGINNER;
-        difficultyAdjustment = -1;
-      }
-    }
-    
-    // Find weak areas based on type performance
-    const weakestType = this.findWeakestChallengeType(stats);
-    
-    // Get challenges that match criteria
-    let query = db('challenges')
-      .where('is_active', true)
-      .whereNotIn('id', recentSubmissions.map(s => s.challenge_id))
-      .orderByRaw('RANDOM()')
-      .limit(1);
-    
-    // Prioritize weak areas 60% of the time
-    if (weakestType && Math.random() < 0.6) {
-      query = query.where('type', weakestType);
-    }
-    
-    // Apply difficulty filter
-    query = query.where('difficulty', targetDifficulty);
-    
-    const challenge = await query.first();
-    
-    if (challenge) {
-      challenge.selectionReason = weakestType ? `weak_area_${weakestType}` : 'adaptive_difficulty';
-      challenge.difficultyAdjustment = difficultyAdjustment;
-    }
-    
+    // Note: The adaptive service already records the selection
     return challenge;
   }
 
@@ -492,6 +426,31 @@ export class ChallengeService {
     return await query
       .orderBy('total_xp', 'desc')
       .limit(100);
+  }
+
+  /**
+   * Get user's challenge history
+   */
+  async getUserChallengeHistory(userId: number, limit: number = 20, offset: number = 0): Promise<any[]> {
+    return await db('challenge_submissions as cs')
+      .join('challenges as c', 'cs.challenge_id', 'c.id')
+      .where('cs.user_id', userId)
+      .select(
+        'cs.id',
+        'cs.challenge_id',
+        'cs.completed_at',
+        'cs.is_correct',
+        'cs.time_spent_seconds',
+        'cs.xp_earned',
+        'cs.feedback',
+        'c.type',
+        'c.difficulty',
+        'c.title',
+        'c.description'
+      )
+      .orderBy('cs.completed_at', 'desc')
+      .limit(limit)
+      .offset(offset);
   }
 }
 
