@@ -18,7 +18,10 @@ export interface IXPService {
   /**
    * Check and award achievements based on user progress
    */
-  checkAndAwardAchievements(userId: number): Promise<void>;
+  checkAndAwardAchievements(userId: number): Promise<{
+    newAchievements: string[];
+    xpAwarded: number;
+  }>;
 
   /**
    * Get user's current XP and level

@@ -102,10 +102,8 @@ export class XPService {
    */
   async getUserXPInfo(userId: number): Promise<{
     totalXP: number;
-    level: number;
-    currentLevelXP: number;
-    nextLevelXP: number;
-    progress: number;
+    currentLevel: number;
+    xpToNextLevel: number;
   }> {
     const user = await db('users')
       .where('id', userId)
@@ -117,7 +115,8 @@ export class XPService {
     
     return {
       totalXP,
-      ...levelInfo
+      currentLevel: levelInfo.level,
+      xpToNextLevel: levelInfo.nextLevelXP - levelInfo.currentLevelXP
     };
   }
 

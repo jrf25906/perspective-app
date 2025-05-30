@@ -1,4 +1,4 @@
-import { Challenge } from '../models/Challenge';
+import { Challenge, ChallengeType } from '../models/Challenge';
 
 /**
  * Interface for Adaptive Challenge Service
@@ -19,9 +19,9 @@ export interface IAdaptiveChallengeService {
    * Analyze user's progress and performance patterns
    */
   analyzeUserProgress(userId: number): Promise<{
-    strengths: string[];
-    weaknesses: string[];
-    recommendedFocus: string[];
+    strengths: ChallengeType[];
+    weaknesses: ChallengeType[];
+    recommendedFocus: ChallengeType[];
     progressTrend: 'improving' | 'stable' | 'declining';
   }>;
 } 

@@ -188,6 +188,46 @@ export class StreakService {
     
     return result;
   }
+
+  /**
+   * Get user's current streak information
+   */
+  async getUserStreakInfo(userId: number): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    lastActiveDate: Date;
+  }> {
+    const user = await db('users')
+      .where('id', userId)
+      .select('current_streak', 'last_activity_date')
+      .first();
+    
+    const stats = await db('user_challenge_stats')
+      .where('user_id', userId)
+      .select('longest_streak')
+      .first();
+    
+    return {
+      currentStreak: user?.current_streak || 0,
+      longestStreak: stats?.longest_streak || 0,
+      lastActiveDate: user?.last_activity_date || new Date()
+    };
+  }
+
+  /**
+   * Check if user has been active today
+   */
+  async hasUserBeenActiveToday(userId: number): Promise<boolean> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const submission = await db('challenge_submissions')
+      .where('user_id', userId)
+      .where('created_at', '>=', todayStart)
+      .first();
+    
+    return !!submission;
+  }
 }
 
 export default new StreakService(); 

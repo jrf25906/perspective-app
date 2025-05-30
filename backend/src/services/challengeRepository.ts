@@ -74,6 +74,17 @@ export class ChallengeRepository {
   }
 
   /**
+   * Record a daily challenge selection
+   * Convenience method that uses today's date
+   */
+  async recordDailyChallengeSelection(userId: number, challengeId: number): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    await this.saveDailyChallengeSelection(userId, challengeId, today);
+  }
+
+  /**
    * Get challenges by IDs
    */
   async getChallengesByIds(challengeIds: number[]): Promise<Challenge[]> {

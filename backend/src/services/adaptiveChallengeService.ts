@@ -582,7 +582,7 @@ export class AdaptiveChallengeService {
   async analyzeUserProgress(userId: number): Promise<{
     strengths: ChallengeType[];
     weaknesses: ChallengeType[];
-    suggestedFocus: ChallengeType[];
+    recommendedFocus: ChallengeType[];
     progressTrend: 'improving' | 'stable' | 'declining';
     readyForAdvanced: boolean;
   }> {
@@ -618,14 +618,14 @@ export class AdaptiveChallengeService {
       (!advancedPerf || advancedPerf.successRate > 0.6);
 
     // Suggested focus areas (weaknesses that haven't been attempted much recently)
-    const suggestedFocus = weaknesses.filter(w => 
+    const recommendedFocus = weaknesses.filter(w => 
       profile.lastChallengeTypes.filter(t => t === w).length < 2
     );
 
     return {
       strengths,
       weaknesses,
-      suggestedFocus,
+      recommendedFocus,
       progressTrend,
       readyForAdvanced
     };
