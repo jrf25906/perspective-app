@@ -53,6 +53,27 @@ export interface Config {
   security: SecuritySettings;
 }
 
+// Validate required environment variables
+const validateEnvironment = () => {
+  const errors: string[] = [];
+  
+  // Check JWT_SECRET is set
+  if (!process.env.JWT_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      errors.push('JWT_SECRET is required in production');
+    } else {
+      console.warn('WARNING: JWT_SECRET not set. Using insecure default for development only.');
+    }
+  }
+  
+  if (errors.length > 0) {
+    throw new Error(`Environment validation failed:\n${errors.join('\n')}`);
+  }
+};
+
+// Run validation
+validateEnvironment();
+
 const config: Config = {
   database: {
     client: process.env.DB_CLIENT || 'pg',
@@ -87,7 +108,9 @@ const config: Config = {
     }
   },
   security: {
-    jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+    jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' 
+      ? (() => { throw new Error('JWT_SECRET is required in production'); })() 
+      : 'dev-only-secret-key'),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
     rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)

@@ -79,7 +79,14 @@ export const getUserProgress = asyncHandler(async (req: AuthenticatedRequest, re
 // POST /challenge/:id/submit
 export const submitChallenge = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const challengeId = parseInt(req.params.id);
+  const challengeId = Number(req.params.id);
+  
+  // Validate challenge ID
+  if (!Number.isInteger(challengeId) || challengeId <= 0) {
+    res.status(400).json({ error: 'Invalid challenge ID' });
+    return;
+  }
+  
   const { answer, timeSpentSeconds } = req.body;
   
   if (!answer || timeSpentSeconds === undefined) {

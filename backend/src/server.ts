@@ -11,8 +11,8 @@ const isSimpleMode = process.env.SIMPLE_MODE === 'true' || process.argv.includes
 // Create Express application
 const app = createApp({ registerDefaultServices: !isSimpleMode });
 
-// Only setup additional features in full mode
-if (!isSimpleMode) {
+// Only setup additional features in full mode and not in test environment
+if (!isSimpleMode && !isTest) {
   // Setup graceful shutdown
   setupGracefulShutdown();
 

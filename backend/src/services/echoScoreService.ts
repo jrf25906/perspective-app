@@ -339,9 +339,14 @@ export class EchoScoreService implements IEchoScoreService {
     
     if (switchingResponses.length === 0) return 50; // Default score
 
-    const medianTime = this.calculateMedian(
-      switchingResponses.map(r => r.time_spent_seconds)
-    );
+    // Filter out null/undefined values before calculating median
+    const times = switchingResponses
+      .map(r => r.time_spent_seconds)
+      .filter((t): t is number => typeof t === 'number' && !isNaN(t));
+    
+    if (times.length === 0) return 50; // Default score if no valid times
+
+    const medianTime = this.calculateMedian(times);
 
     // Convert time to score (faster = higher score, with reasonable bounds)
     const maxTime = 300; // 5 minutes

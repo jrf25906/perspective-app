@@ -89,8 +89,8 @@ export class ChallengeAnswerService {
   /**
    * Calculate answer quality score (0-1)
    */
-  calculateAnswerQuality(challenge: Challenge, answer: any, timeSpentSeconds: number): number {
-    const isCorrect = this.checkAnswer(challenge, answer);
+  async calculateAnswerQuality(challenge: Challenge, answer: any, timeSpentSeconds: number): Promise<number> {
+    const isCorrect = await this.checkAnswer(challenge, answer);
     let qualityScore = isCorrect ? 1.0 : 0.3;
     
     // Adjust for time spent
