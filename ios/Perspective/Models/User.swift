@@ -32,6 +32,38 @@ struct User: Codable, Identifiable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        username = try container.decode(String.self, forKey: .username)
+        firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+        lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
+        avatarUrl = try container.decodeIfPresent(String.self, forKey: .avatarUrl)
+        
+        // Handle integer to boolean conversion
+        if let isActiveInt = try? container.decode(Int.self, forKey: .isActive) {
+            isActive = isActiveInt != 0
+        } else {
+            isActive = try container.decode(Bool.self, forKey: .isActive)
+        }
+        
+        if let emailVerifiedInt = try? container.decode(Int.self, forKey: .emailVerified) {
+            emailVerified = emailVerifiedInt != 0
+        } else {
+            emailVerified = try container.decode(Bool.self, forKey: .emailVerified)
+        }
+        
+        echoScore = try container.decode(Double.self, forKey: .echoScore)
+        biasProfile = try container.decodeIfPresent(BiasProfile.self, forKey: .biasProfile)
+        preferredChallengeTime = try container.decodeIfPresent(String.self, forKey: .preferredChallengeTime)
+        currentStreak = try container.decode(Int.self, forKey: .currentStreak)
+        lastActivityDate = try container.decodeIfPresent(Date.self, forKey: .lastActivityDate)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
 }
 
 struct BiasProfile: Codable {
@@ -78,6 +110,15 @@ struct GoogleSignInRequest: Codable {
     let idToken: String
     
     enum CodingKeys: String, CodingKey {
-        case idToken = "idToken"
+        case idToken = "id_token"
     }
+}
+
+struct UserStatistics {
+    let totalChallengesCompleted: Int
+    let currentStreak: Int
+    let longestStreak: Int
+    let averageAccuracy: Double
+    let totalTimeSpent: Int // in minutes
+    let joinDate: Date
 }

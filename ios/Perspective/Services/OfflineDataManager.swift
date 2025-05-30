@@ -2,6 +2,8 @@ import Foundation
 import Combine
 
 class OfflineDataManager: ObservableObject {
+    static let shared = OfflineDataManager()
+    
     private var cancellables = Set<AnyCancellable>()
     
     @Published var isOnline = true

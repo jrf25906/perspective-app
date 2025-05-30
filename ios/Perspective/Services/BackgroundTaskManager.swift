@@ -51,7 +51,7 @@ class BackgroundTaskManager: ObservableObject {
     }
 }
 
-class BackgroundSyncOperation: Operation {
+class BackgroundSyncOperation: Operation, @unchecked Sendable {
     override func main() {
         guard !isCancelled else { return }
         

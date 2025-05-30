@@ -215,7 +215,57 @@ class APIService: ObservableObject {
                 if let httpResponse = response as? HTTPURLResponse {
                     print("HTTP Status: \(httpResponse.statusCode)")
                     print("Response Headers: \(httpResponse.allHeaderFields)")
+                    
+                    // Check HTTP status code
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        // Success - continue with normal flow
+                        break
+                    case 400:
+                        // Bad Request
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.badRequest(errorResponse.error.message)
+                        } else {
+                            throw APIError.badRequest("Invalid request")
+                        }
+                    case 401:
+                        // Unauthorized
+                        throw APIError.unauthorized
+                    case 403:
+                        // Forbidden
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.forbidden(errorResponse.error.message)
+                        } else {
+                            throw APIError.forbidden("Access denied")
+                        }
+                    case 404:
+                        // Not Found
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.notFound(errorResponse.error.message)
+                        } else {
+                            throw APIError.notFound("Resource not found")
+                        }
+                    case 409:
+                        // Conflict
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.conflict(errorResponse.error.message)
+                        } else {
+                            throw APIError.conflict("Resource conflict")
+                        }
+                    case 500...599:
+                        // Server Error
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.serverError(errorResponse.error.message)
+                        } else {
+                            throw APIError.serverError("Internal server error")
+                        }
+                    default:
+                        // Unknown error
+                        let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                        throw APIError.unknownError(httpResponse.statusCode, message)
+                    }
                 }
+                
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("Raw Response: \(responseString)")
                 }
@@ -223,7 +273,9 @@ class APIService: ObservableObject {
             }
             .decode(type: responseType, decoder: JSONDecoder.apiDecoder)
             .mapError { error in
-                if let decodingError = error as? DecodingError {
+                if let apiError = error as? APIError {
+                    return apiError
+                } else if let decodingError = error as? DecodingError {
                     print("Decoding Error Details: \(decodingError)")
                     return APIError.decodingError
                 } else {
@@ -275,7 +327,57 @@ class APIService: ObservableObject {
                 if let httpResponse = response as? HTTPURLResponse {
                     print("HTTP Status: \(httpResponse.statusCode)")
                     print("Response Headers: \(httpResponse.allHeaderFields)")
+                    
+                    // Check HTTP status code
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        // Success - continue with normal flow
+                        break
+                    case 400:
+                        // Bad Request
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.badRequest(errorResponse.error.message)
+                        } else {
+                            throw APIError.badRequest("Invalid request")
+                        }
+                    case 401:
+                        // Unauthorized
+                        throw APIError.unauthorized
+                    case 403:
+                        // Forbidden
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.forbidden(errorResponse.error.message)
+                        } else {
+                            throw APIError.forbidden("Access denied")
+                        }
+                    case 404:
+                        // Not Found
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.notFound(errorResponse.error.message)
+                        } else {
+                            throw APIError.notFound("Resource not found")
+                        }
+                    case 409:
+                        // Conflict
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.conflict(errorResponse.error.message)
+                        } else {
+                            throw APIError.conflict("Resource conflict")
+                        }
+                    case 500...599:
+                        // Server Error
+                        if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                            throw APIError.serverError(errorResponse.error.message)
+                        } else {
+                            throw APIError.serverError("Internal server error")
+                        }
+                    default:
+                        // Unknown error
+                        let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                        throw APIError.unknownError(httpResponse.statusCode, message)
+                    }
                 }
+                
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("Raw Response: \(responseString)")
                 }
@@ -283,7 +385,9 @@ class APIService: ObservableObject {
             }
             .decode(type: responseType, decoder: JSONDecoder.apiDecoder)
             .mapError { error in
-                if let decodingError = error as? DecodingError {
+                if let apiError = error as? APIError {
+                    return apiError
+                } else if let decodingError = error as? DecodingError {
                     print("Decoding Error Details: \(decodingError)")
                     return APIError.decodingError
                 } else {
@@ -294,12 +398,31 @@ class APIService: ObservableObject {
     }
 }
 
+// MARK: - Error Response
+
+struct ErrorResponse: Codable {
+    let error: ErrorDetail
+}
+
+struct ErrorDetail: Codable {
+    let code: String?
+    let message: String
+}
+
+// MARK: - API Error
+
 enum APIError: Error, LocalizedError {
     case invalidURL
     case unauthorized
     case encodingError
     case decodingError
     case networkError(Error)
+    case badRequest(String)
+    case forbidden(String)
+    case notFound(String)
+    case conflict(String)
+    case serverError(String)
+    case unknownError(Int, String)
     
     var errorDescription: String? {
         switch self {
@@ -313,6 +436,18 @@ enum APIError: Error, LocalizedError {
             return "Failed to decode response"
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
+        case .badRequest(let message):
+            return "Bad request: \(message)"
+        case .forbidden(let message):
+            return "Forbidden: \(message)"
+        case .notFound(let message):
+            return "Not found: \(message)"
+        case .conflict(let message):
+            return "Conflict: \(message)"
+        case .serverError(let message):
+            return "Server error: \(message)"
+        case .unknownError(let code, let message):
+            return "Error (\(code)): \(message)"
         }
     }
 }
@@ -320,7 +455,30 @@ enum APIError: Error, LocalizedError {
 extension JSONDecoder {
     static let apiDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        
+        // Custom date formatter to handle backend date format
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            
+            // Try the backend format first
+            if let date = dateFormatter.date(from: dateString) {
+                return date
+            }
+            
+            // Fall back to ISO8601 if that fails
+            let isoFormatter = ISO8601DateFormatter()
+            if let date = isoFormatter.date(from: dateString) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date from \(dateString)")
+        }
+        
         return decoder
     }()
 } 

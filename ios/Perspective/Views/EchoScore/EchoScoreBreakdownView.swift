@@ -103,7 +103,7 @@ struct ScoreComponentView: View {
                         
                         Rectangle()
                             .fill(color)
-                            .frame(width: geometry.size.width * (score / 100), height: 4)
+                            .frame(width: max(0, geometry.size.width * (score / 100)), height: 4)
                             .cornerRadius(2)
                     }
                 }

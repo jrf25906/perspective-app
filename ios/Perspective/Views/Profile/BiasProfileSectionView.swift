@@ -166,7 +166,7 @@ struct BiasScaleView: View {
                             Circle()
                                 .stroke(Color.black, lineWidth: 2)
                         )
-                        .offset(x: geometry.size.width * position - 8)
+                        .offset(x: max(0, geometry.size.width) * position - 8)
                 }
             }
             .frame(height: 16)

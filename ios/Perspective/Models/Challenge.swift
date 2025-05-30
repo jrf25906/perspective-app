@@ -185,7 +185,7 @@ struct ChallengeSubmission: Codable {
     
     private enum CodingKeys: String, CodingKey {
         case answer
-        case timeSpentSeconds = "timeSpentSeconds"
+        case timeSpentSeconds = "time_spent_seconds"
     }
 }
 

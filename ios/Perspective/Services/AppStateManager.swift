@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 class AppStateManager: ObservableObject {
     static let shared = AppStateManager()
@@ -49,7 +50,7 @@ class AppStateManager: ObservableObject {
             .store(in: &cancellables)
         
         // Monitor offline data sync
-        OfflineDataManager().$pendingSyncCount
+        OfflineDataManager.shared.$pendingSyncCount
             .sink { [weak self] count in
                 self?.updateBadgeCount(count)
             }

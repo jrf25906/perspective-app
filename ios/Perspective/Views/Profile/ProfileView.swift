@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Charts
 
 struct ProfileView: View {
     @EnvironmentObject var apiService: APIService
@@ -18,28 +19,17 @@ struct ProfileView: View {
                         onEditProfile: { showingEditProfile = true }
                     )
                     
-                    // Echo Score Summary
-                    if let user = apiService.currentUser {
-                        ProfileEchoScoreSummaryView(user: user)
-                    }
+                    // Stats Grid
+                    ProfileStatsGridView()
                     
-                    // Bias Profile Section
-                    BiasProfileSectionView(
-                        biasProfile: apiService.currentUser?.biasProfile,
-                        onTakeAssessment: { showingBiasAssessment = true }
-                    )
+                    // Streak Card
+                    StreakCardView()
                     
-                    // Statistics Section
-                    ProfileStatisticsView()
+                    // Achievements Section
+                    AchievementsSection()
                     
-                    // Quick Actions
-                    ProfileQuickActionsView()
-                    
-                    // Settings and Account
-                    ProfileSettingsSectionView(
-                        onShowSettings: { showingSettings = true },
-                        onLogout: { apiService.logout() }
-                    )
+                    // Settings Section
+                    SettingsSection()
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
@@ -48,8 +38,11 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingSettings = true }) {
-                        Image(systemName: "gearshape")
+                    Button(action: {
+                        apiService.logout()
+                    }) {
+                        Image(systemName: "gear")
+                            .foregroundColor(.primary)
                     }
                 }
             }
@@ -64,43 +57,314 @@ struct ProfileView: View {
             }
         }
         .onAppear {
-            viewModel.setup(apiService: apiService)
+            viewModel.loadProfileData()
         }
     }
 }
 
-class ProfileViewModel: ObservableObject {
-    @Published var userStats: UserStatistics?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+struct ProfileStatsGridView: View {
+    @EnvironmentObject var apiService: APIService
     
-    private var apiService: APIService?
-    private var cancellables = Set<AnyCancellable>()
-    
-    func setup(apiService: APIService) {
-        self.apiService = apiService
-        loadUserStatistics()
-    }
-    
-    private func loadUserStatistics() {
-        // This would load user statistics from the API
-        // For now, we'll use mock data
-        userStats = UserStatistics(
-            totalChallengesCompleted: 45,
-            currentStreak: 7,
-            longestStreak: 12,
-            averageAccuracy: 78.5,
-            totalTimeSpent: 1250, // minutes
-            joinDate: Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        )
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Your Stats")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
+                StatCard(
+                    title: "Echo Score",
+                    value: String(format: "%.0f", apiService.currentUser?.echoScore ?? 0),
+                    icon: "chart.line.uptrend.xyaxis",
+                    color: .blue
+                )
+                
+                StatCard(
+                    title: "Current Streak",
+                    value: "\(apiService.currentUser?.currentStreak ?? 0)",
+                    icon: "flame.fill",
+                    color: .orange
+                )
+                
+                StatCard(
+                    title: "Challenges",
+                    value: "0", // TODO: Get from backend
+                    icon: "brain.head.profile",
+                    color: .purple
+                )
+                
+                StatCard(
+                    title: "Accuracy",
+                    value: "0%", // TODO: Calculate from challenges
+                    icon: "target",
+                    color: .green
+                )
+            }
+        }
     }
 }
 
-struct UserStatistics {
-    let totalChallengesCompleted: Int
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(value)
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
+
+struct StreakCardView: View {
+    @EnvironmentObject var apiService: APIService
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Streak Progress")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            VStack(spacing: 16) {
+                HStack {
+                    Image(systemName: "flame.fill")
+                        .font(.title)
+                        .foregroundColor(.orange)
+                    
+                    VStack(alignment: .leading) {
+                        Text("\(apiService.currentUser?.currentStreak ?? 0) day streak")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Keep it up! Complete today's challenge.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                
+                // Streak visualization
+                StreakVisualization(currentStreak: apiService.currentUser?.currentStreak ?? 0)
+            }
+            .padding(20)
+            .background(
+                LinearGradient(
+                    colors: [Color.orange.opacity(0.1), Color.red.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(16)
+        }
+    }
+}
+
+struct StreakVisualization: View {
     let currentStreak: Int
-    let longestStreak: Int
-    let averageAccuracy: Double
-    let totalTimeSpent: Int // in minutes
-    let joinDate: Date
+    let maxDisplay = 7
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(1...maxDisplay, id: \.self) { day in
+                Circle()
+                    .fill(day <= currentStreak ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                    .overlay(
+                        Text("\(day)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(day <= currentStreak ? .white : .gray)
+                    )
+            }
+            
+            if currentStreak > maxDisplay {
+                Text("+\(currentStreak - maxDisplay)")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.orange.opacity(0.2))
+                    .cornerRadius(12)
+            }
+        }
+    }
+}
+
+struct AchievementsSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Achievements")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
+                AchievementBadge(
+                    title: "First Steps",
+                    icon: "foot.2",
+                    isEarned: true,
+                    description: "Complete your first challenge"
+                )
+                
+                AchievementBadge(
+                    title: "Streak Master",
+                    icon: "flame",
+                    isEarned: false,
+                    description: "Maintain a 7-day streak"
+                )
+                
+                AchievementBadge(
+                    title: "Echo Hunter",
+                    icon: "target",
+                    isEarned: false,
+                    description: "Reach Echo Score of 100"
+                )
+                
+                AchievementBadge(
+                    title: "Perspective Pro",
+                    icon: "eye.circle",
+                    isEarned: false,
+                    description: "Complete 50 challenges"
+                )
+                
+                AchievementBadge(
+                    title: "Logic Master",
+                    icon: "puzzlepiece",
+                    isEarned: false,
+                    description: "Complete 10 logic puzzles"
+                )
+                
+                AchievementBadge(
+                    title: "Bias Buster",
+                    icon: "arrow.left.arrow.right",
+                    isEarned: false,
+                    description: "Complete 10 bias swap challenges"
+                )
+            }
+        }
+    }
+}
+
+struct AchievementBadge: View {
+    let title: String
+    let icon: String
+    let isEarned: Bool
+    let description: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(isEarned ? Color.blue : Color.gray.opacity(0.3))
+                    .frame(width: 60, height: 60)
+                
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(isEarned ? .white : .gray)
+            }
+            
+            Text(title)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundColor(isEarned ? .primary : .secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+struct SettingsSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Settings")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            VStack(spacing: 0) {
+                SettingsRow(icon: "bell", title: "Notifications", hasChevron: true)
+                Divider().padding(.leading, 44)
+                SettingsRow(icon: "clock", title: "Challenge Time", hasChevron: true)
+                Divider().padding(.leading, 44)
+                SettingsRow(icon: "chart.bar", title: "Data & Privacy", hasChevron: true)
+                Divider().padding(.leading, 44)
+                SettingsRow(icon: "questionmark.circle", title: "Help & Support", hasChevron: true)
+            }
+            .background(Color(.systemGray6))
+            .cornerRadius(16)
+        }
+    }
+}
+
+struct SettingsRow: View {
+    let icon: String
+    let title: String
+    let hasChevron: Bool
+    
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(.blue)
+                .frame(width: 24)
+            
+            Text(title)
+                .font(.body)
+            
+            Spacer()
+            
+            if hasChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - View Model
+
+class ProfileViewModel: ObservableObject {
+    @Published var isLoading = false
+    
+    func loadProfileData() {
+        // TODO: Load additional profile data like challenge stats, achievements
+        isLoading = true
+        
+        // Simulate loading
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.isLoading = false
+        }
+    }
+}
+
+struct ProfileView_Previews: PreviewProvider {
+    static var previews: some View {
+        ProfileView()
+            .environmentObject(APIService.shared)
+    }
 } 

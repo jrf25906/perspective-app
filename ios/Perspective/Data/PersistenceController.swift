@@ -5,7 +5,7 @@ class PersistenceController: ObservableObject {
     static let shared = PersistenceController()
     
     lazy var container: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "PerspectiveDataModel")
+        let container = NSPersistentContainer(name: "Perspective")
         
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
