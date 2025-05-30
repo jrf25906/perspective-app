@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import { generateToken, AuthenticatedRequest } from '../middleware/auth';
 import { CreateUserRequest, LoginRequest, User } from '../models/User';
