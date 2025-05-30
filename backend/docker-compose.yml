@@ -3,6 +3,8 @@ version: '3.8'
 services:
   app:
     build: .
+    env_file:
+      - .env
     ports:
       - "3000:3000"
     environment:
@@ -11,8 +13,8 @@ services:
       - DB_PORT=5432
       - DB_NAME=perspective_db
       - DB_USER=postgres
-      - DB_PASSWORD=password
-      - JWT_SECRET=your-super-secret-jwt-key
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
       - PORT=3000
     depends_on:
       - postgres
@@ -27,7 +29,7 @@ services:
     environment:
       - POSTGRES_DB=perspective_db
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

@@ -58,7 +58,8 @@ Node.js Express backend API server for the Perspective App providing authenticat
 2. Set up environment variables:
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your configuration.
+   # At minimum set values for DB_PASSWORD and JWT_SECRET used by Docker Compose
    ```
 
 3. Start PostgreSQL (using Docker):
@@ -116,6 +117,10 @@ docker-compose up
 # Run in production mode
 docker-compose -f docker-compose.prod.yml up
 ```
+
+`docker-compose.yml` now loads `DB_PASSWORD` and `JWT_SECRET` from a `.env` file
+specified with `env_file`. Copy `backend/.env.example` to `.env` and update
+these values before running Docker Compose.
 
 ## Environment Variables
 
