@@ -8,9 +8,14 @@ import {
   setupSchedulers,
   setupGracefulShutdown
 } from './setup';
+import { registerServices } from './di/serviceRegistration';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize dependency injection container
+console.log('🔧 Initializing dependency injection container...');
+registerServices();
 
 // Create Express application
 const app = express();
@@ -38,6 +43,7 @@ if (!isTest) {
     console.log(`🔒 Security: Enhanced middleware enabled`);
     console.log(`🏥 Health check: http://localhost:${serverConfig.port}/health`);
     console.log(`⚡ Rate limiting: Enabled`);
+    console.log(`💉 Dependency injection: Configured`);
   });
 }
 

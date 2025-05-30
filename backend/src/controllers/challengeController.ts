@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
-import challengeService from '../services/challengeService';
-import adaptiveChallengeService from '../services/adaptiveChallengeService';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { IChallengeService } from '../interfaces/IChallengeService';
+import { IAdaptiveChallengeService } from '../interfaces/IAdaptiveChallengeService';
+import { getService } from '../di/serviceRegistration';
+import { ServiceTokens } from '../di/container';
+
+// Get services from DI container
+const getChallengeService = (): IChallengeService => getService<IChallengeService>(ServiceTokens.ChallengeService);
+const getAdaptiveChallengeService = (): IAdaptiveChallengeService => getService<IAdaptiveChallengeService>(ServiceTokens.AdaptiveChallengeService);
 
 // GET /challenge/today
 export const getTodayChallenge = async (req: any, res: any) => {
@@ -12,6 +18,7 @@ export const getTodayChallenge = async (req: any, res: any) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    const challengeService = getChallengeService();
     const challenge = await challengeService.getTodaysChallengeForUser(userId);
     
     if (!challenge) {
@@ -37,6 +44,7 @@ export const getAdaptiveChallenge = async (req: any, res: any) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    const adaptiveChallengeService = getAdaptiveChallengeService();
     const challenge = await adaptiveChallengeService.getNextChallengeForUser(userId);
     
     if (!challenge) {
@@ -63,6 +71,7 @@ export const getAdaptiveRecommendations = async (req: any, res: any) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    const adaptiveChallengeService = getAdaptiveChallengeService();
     const recommendations = await adaptiveChallengeService.getAdaptiveChallengeRecommendations(userId, count);
     
     // Remove correct_answers from recommendations
@@ -90,6 +99,7 @@ export const getUserProgress = async (req: any, res: any) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    const adaptiveChallengeService = getAdaptiveChallengeService();
     const progress = await adaptiveChallengeService.analyzeUserProgress(userId);
     
     res.json(progress);
@@ -114,6 +124,7 @@ export const submitChallenge = async (req: any, res: any) => {
       return res.status(400).json({ error: 'Answer and timeSpentSeconds are required' });
     }
     
+    const challengeService = getChallengeService();
     const result = await challengeService.submitChallenge(
       userId,
       challengeId,
@@ -137,6 +148,7 @@ export const getChallengeStats = async (req: any, res: any) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    const challengeService = getChallengeService();
     const stats = await challengeService.getUserChallengeStats(userId);
     
     res.json(stats);
@@ -151,6 +163,7 @@ export const getLeaderboard = async (req: any, res: any) => {
   try {
     const timeframe = req.query.timeframe as 'daily' | 'weekly' | 'allTime' || 'weekly';
     
+    const challengeService = getChallengeService();
     const leaderboard = await challengeService.getLeaderboard(timeframe);
     
     res.json(leaderboard);
@@ -173,6 +186,7 @@ export const getChallengeHistory = async (req: any, res: any) => {
     
     const offset = (page - 1) * limit;
     
+    const challengeService = getChallengeService();
     const history = await challengeService.getUserChallengeHistory(userId, limit, offset);
     
     res.json({

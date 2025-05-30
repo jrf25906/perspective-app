@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-class APIService: ObservableObject {
+class APIService: ObservableObject, APIServiceProtocol {
     static let shared = APIService()
     
     private let baseURL = "http://127.0.0.1:3000/api"
