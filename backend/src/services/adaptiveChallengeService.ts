@@ -563,17 +563,21 @@ export class AdaptiveChallengeService {
     userId: number,
     count: number = 3
   ): Promise<Challenge[]> {
-    const recommendations: Challenge[] = [];
-    
-    // Get multiple challenges using the adaptive algorithm
-    for (let i = 0; i < count; i++) {
-      const challenge = await this.getNextChallengeForUser(userId);
-      if (challenge && !recommendations.find(c => c.id === challenge.id)) {
-        recommendations.push(challenge);
-      }
+    const [user, profile, available] = await Promise.all([
+      this.getUserWithBiasProfile(userId),
+      this.buildUserPerformanceProfile(userId),
+      this.getAvailableChallenges(userId)
+    ]);
+
+    if (!user || available.length === 0) {
+      return [];
     }
 
-    return recommendations;
+    const scored = await this.scoreChallenges(available, user, profile);
+
+    return scored
+      .slice(0, count)
+      .map(sc => sc.challenge);
   }
 
   /**

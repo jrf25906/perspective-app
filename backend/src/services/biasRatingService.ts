@@ -239,20 +239,21 @@ class BiasRatingService {
     }
 
     // Fetch content with target biases
-    const articles: IContent[] = [];
     const articlesPerBias = Math.ceil(count / targetBiases.length);
 
-    for (const bias of targetBiases) {
-      const biasArticles = await db('content')
-        .where('bias_rating', bias)
-        .where('is_active', true)
-        .where('is_verified', true)
-        .whereRaw('? = ANY(topics)', [topic])
-        .orderBy('published_at', 'desc')
-        .limit(articlesPerBias);
+    const articlesArrays = await Promise.all(
+      targetBiases.map(bias =>
+        db('content')
+          .where('bias_rating', bias)
+          .where('is_active', true)
+          .where('is_verified', true)
+          .whereRaw('? = ANY(topics)', [topic])
+          .orderBy('published_at', 'desc')
+          .limit(articlesPerBias)
+      )
+    );
 
-      articles.push(...biasArticles);
-    }
+    const articles = articlesArrays.flat();
 
     // Shuffle and limit
     return articles
