@@ -86,12 +86,20 @@ export class UserService {
     averageAccuracy: number;
     totalTimeSpent: number;
   }> {
-    // This is a placeholder - in a real app you'd query the challenges/submissions tables
-    // For now, return mock data
+    const stats = await db('challenge_submissions')
+      .where('user_id', id)
+      .whereNotNull('completed_at')
+      .select(
+        db.raw('COUNT(id) as total_completed'),
+        db.raw('AVG(CASE WHEN is_correct THEN 1 ELSE 0 END) * 100 as avg_accuracy'),
+        db.raw('SUM(time_spent_seconds) / 60 as total_time_minutes')
+      )
+      .first();
+
     return {
-      totalChallengesCompleted: 0,
-      averageAccuracy: 0,
-      totalTimeSpent: 0
+      totalChallengesCompleted: Number(stats?.total_completed ?? 0),
+      averageAccuracy: Number(stats?.avg_accuracy ?? 0),
+      totalTimeSpent: Number(stats?.total_time_minutes ?? 0)
     };
   }
 }
