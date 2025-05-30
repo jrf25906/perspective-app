@@ -20,7 +20,7 @@ struct ProfileView: View {
                     )
                     
                     // Stats Grid
-                    ProfileStatsGridView()
+                    ProfileStatsGridView(viewModel: viewModel)
                     
                     // Streak Card
                     StreakCardView()
@@ -64,6 +64,7 @@ struct ProfileView: View {
 
 struct ProfileStatsGridView: View {
     @EnvironmentObject var apiService: APIService
+    @ObservedObject var viewModel: ProfileViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -88,14 +89,14 @@ struct ProfileStatsGridView: View {
                 
                 StatCard(
                     title: "Challenges",
-                    value: "0", // TODO: Get from backend
+                    value: "\(viewModel.totalCompleted)",
                     icon: "brain.head.profile",
                     color: .purple
                 )
-                
+
                 StatCard(
                     title: "Accuracy",
-                    value: "0%", // TODO: Calculate from challenges
+                    value: String(format: "%.0f%%", viewModel.averageAccuracy),
                     icon: "target",
                     color: .green
                 )
@@ -350,15 +351,30 @@ struct SettingsRow: View {
 
 class ProfileViewModel: ObservableObject {
     @Published var isLoading = false
-    
+    @Published var totalCompleted: Int = 0
+    @Published var averageAccuracy: Double = 0
+
+    private var cancellables = Set<AnyCancellable>()
+
     func loadProfileData() {
-        // TODO: Load additional profile data like challenge stats, achievements
         isLoading = true
-        
-        // Simulate loading
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isLoading = false
-        }
+
+        APIService.shared.getChallengeStats()
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoading = false
+                    if case .failure = completion {
+                        // Handle errors if necessary
+                    }
+                },
+                receiveValue: { [weak self] stats in
+                    self?.isLoading = false
+                    self?.totalCompleted = stats.totalCompleted
+                    self?.averageAccuracy = stats.averageAccuracy
+                }
+            )
+            .store(in: &cancellables)
     }
 }
 
