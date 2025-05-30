@@ -42,4 +42,56 @@ export class UserService {
         updated_at: db.fn.now() 
       });
   }
+
+  static async updateProfile(id: number, profileData: Partial<User>): Promise<User> {
+    const [updatedUser] = await db<User>('users')
+      .where({ id })
+      .update({
+        ...profileData,
+        updated_at: db.fn.now()
+      })
+      .returning('*');
+    
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+    
+    return updatedUser;
+  }
+
+  static async isEmailTaken(email: string, excludeUserId?: number): Promise<boolean> {
+    const query = db<User>('users').where({ email });
+    
+    if (excludeUserId) {
+      query.andWhere('id', '!=', excludeUserId);
+    }
+    
+    const user = await query.first();
+    return !!user;
+  }
+
+  static async isUsernameTaken(username: string, excludeUserId?: number): Promise<boolean> {
+    const query = db<User>('users').where({ username });
+    
+    if (excludeUserId) {
+      query.andWhere('id', '!=', excludeUserId);
+    }
+    
+    const user = await query.first();
+    return !!user;
+  }
+
+  static async getUserStats(id: number): Promise<{
+    totalChallengesCompleted: number;
+    averageAccuracy: number;
+    totalTimeSpent: number;
+  }> {
+    // This is a placeholder - in a real app you'd query the challenges/submissions tables
+    // For now, return mock data
+    return {
+      totalChallengesCompleted: 0,
+      averageAccuracy: 0,
+      totalTimeSpent: 0
+    };
+  }
 }

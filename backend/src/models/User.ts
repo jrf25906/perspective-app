@@ -42,4 +42,18 @@ export interface LoginRequest {
 export interface AuthResponse {
   user: Omit<User, 'password_hash'>;
   token: string;
+}
+
+export interface UpdateProfileRequest {
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  email?: string;
+  avatar_url?: string;
+  preferred_challenge_time?: string;
+}
+
+export interface ProfileUpdateResponse {
+  user: Omit<User, 'password_hash'>;
+  message: string;
 } 
