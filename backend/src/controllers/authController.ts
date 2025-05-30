@@ -1,26 +1,35 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
+import Joi from 'joi';
 import { generateToken, AuthenticatedRequest } from '../middleware/auth';
 import { CreateUserRequest, LoginRequest, User } from '../models/User';
 import { UserService } from '../services/UserService';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const registerSchema = Joi.object({
+  email: Joi.string().email().required(),
+  username: Joi.string().alphanum().min(3).max(30).required(),
+  password: Joi.string().min(6).required(),
+  first_name: Joi.string().allow('', null),
+  last_name: Joi.string().allow('', null)
+});
+
 export class AuthController {
   static async register(req: Request, res: Response) {
     try {
-      const { email, username, password, first_name, last_name }: CreateUserRequest = req.body;
-
-      // Validate input
-      if (!email || !username || !password) {
+      const { error, value } = registerSchema.validate(req.body, { abortEarly: false });
+      if (error) {
         return res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Email, username, and password are required'
+            message: error.details.map(d => d.message).join(', ')
           }
         });
       }
+
+      const { email, username, password, first_name, last_name }: CreateUserRequest = value;
 
       // Check if user already exists
       const existingUser = await UserService.findByEmailOrUsername(email, username);
