@@ -1,17 +1,9 @@
 import SwiftUI
+import Combine
 
 struct ProfileStatisticsView: View {
     @EnvironmentObject var apiService: APIService
-    
-    // Mock data - in real app, this would come from API
-    private let mockStats = UserStatistics(
-        totalChallengesCompleted: 45,
-        currentStreak: 7,
-        longestStreak: 12,
-        averageAccuracy: 78.5,
-        totalTimeSpent: 1250,
-        joinDate: Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-    )
+    @StateObject private var viewModel = ProfileStatisticsViewModel()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -19,49 +11,53 @@ struct ProfileStatisticsView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 16) {
-                StatisticCardView(
-                    title: "Challenges Completed",
-                    value: "\(mockStats.totalChallengesCompleted)",
-                    icon: "checkmark.circle.fill",
-                    color: .green
-                )
-                
-                StatisticCardView(
-                    title: "Average Accuracy",
-                    value: "\(Int(mockStats.averageAccuracy))%",
-                    icon: "target",
-                    color: .blue
-                )
-                
-                StatisticCardView(
-                    title: "Longest Streak",
-                    value: "\(mockStats.longestStreak) days",
-                    icon: "flame.fill",
-                    color: .orange
-                )
-                
-                StatisticCardView(
-                    title: "Time Invested",
-                    value: "\(mockStats.totalTimeSpent / 60)h \(mockStats.totalTimeSpent % 60)m",
-                    icon: "clock.fill",
-                    color: .purple
-                )
-            }
-            
-            // Member since
-            HStack {
-                Image(systemName: "calendar")
-                    .foregroundColor(.secondary)
-                
-                Text("Member since \(mockStats.joinDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
+            if let stats = viewModel.statistics {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 16) {
+                    StatisticCardView(
+                        title: "Challenges Completed",
+                        value: "\(stats.totalChallengesCompleted)",
+                        icon: "checkmark.circle.fill",
+                        color: .green
+                    )
+
+                    StatisticCardView(
+                        title: "Average Accuracy",
+                        value: "\(Int(stats.averageAccuracy))%",
+                        icon: "target",
+                        color: .blue
+                    )
+
+                    StatisticCardView(
+                        title: "Longest Streak",
+                        value: "\(stats.longestStreak ?? 0) days",
+                        icon: "flame.fill",
+                        color: .orange
+                    )
+
+                    StatisticCardView(
+                        title: "Time Invested",
+                        value: "\(stats.totalTimeSpent / 60)h \(stats.totalTimeSpent % 60)m",
+                        icon: "clock.fill",
+                        color: .purple
+                    )
+                }
+
+                // Member since
+                HStack {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.secondary)
+
+                    Text("Member since \(stats.memberSince.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+                }
+            } else {
+                ProgressView()
             }
         }
         .padding()
@@ -96,4 +92,22 @@ struct StatisticCardView: View {
         .background(color.opacity(0.1))
         .cornerRadius(12)
     }
-} 
+}
+
+class ProfileStatisticsViewModel: ObservableObject {
+    @Published var statistics: UserStatistics?
+
+    private var cancellables = Set<AnyCancellable>()
+
+    init(apiService: APIService = .shared) {
+        apiService.getProfileStats()
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { _ in },
+                receiveValue: { [weak self] stats in
+                    self?.statistics = stats
+                }
+            )
+            .store(in: &cancellables)
+    }
+}

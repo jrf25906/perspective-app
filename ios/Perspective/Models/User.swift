@@ -114,11 +114,22 @@ struct GoogleSignInRequest: Codable {
     }
 }
 
-struct UserStatistics {
+struct UserStatistics: Codable {
     let totalChallengesCompleted: Int
     let currentStreak: Int
-    let longestStreak: Int
+    let longestStreak: Int?
     let averageAccuracy: Double
     let totalTimeSpent: Int // in minutes
-    let joinDate: Date
+    let memberSince: Date
+    let lastActivity: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case totalChallengesCompleted
+        case currentStreak
+        case longestStreak
+        case averageAccuracy
+        case totalTimeSpent
+        case memberSince
+        case lastActivity
+    }
 }

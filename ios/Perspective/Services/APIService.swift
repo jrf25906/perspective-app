@@ -168,7 +168,16 @@ class APIService: ObservableObject {
             responseType: [EchoScoreHistory].self
         )
     }
-    
+
+    func getProfileStats() -> AnyPublisher<UserStatistics, APIError> {
+        return makeAuthenticatedRequest(
+            endpoint: "/profile/stats",
+            method: "GET",
+            body: Optional<String>.none,
+            responseType: UserStatistics.self
+        )
+    }
+
     // MARK: - Private Methods
     
     private func handleAuthSuccess(_ response: AuthResponse) {
