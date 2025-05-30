@@ -1,7 +1,13 @@
 const request = require('supertest');
-const app = require('../dist/server').default;
+const { createTestApp } = require('../src/app');
 
 describe('Server', () => {
+  let app;
+
+  beforeEach(() => {
+    app = createTestApp();
+  });
+
   test('Health check endpoint should return 200', async () => {
     const response = await request(app).get('/health');
     

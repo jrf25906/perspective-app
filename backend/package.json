@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "npm run build && node dist/server.js",
     "dev": "nodemon --exec ts-node src/server.ts",
+    "dev:simple": "SIMPLE_MODE=true nodemon --exec ts-node src/server.ts",
     "pretest": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",

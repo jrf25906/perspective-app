@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { EchoScoreController } from '../controllers/echoScoreController';
 import { authenticateToken } from '../middleware/auth';
+import { authRequired } from '../middleware/authRequired';
 
 const router = Router();
 
 // All Echo Score routes require authentication
-router.use(authenticateToken);
+router.use(authenticateToken, authRequired);
 
 // Calculate and update user's Echo Score
 router.post('/calculate', EchoScoreController.calculateAndUpdate);

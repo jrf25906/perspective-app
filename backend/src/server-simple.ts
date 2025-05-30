@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file is deprecated. Use `npm run dev:simple` or set SIMPLE_MODE=true to run server in simple mode.
+ * This functionality has been consolidated into server.ts for better maintainability.
+ */
+
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

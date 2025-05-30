@@ -1,4 +1,4 @@
-import { container, ServiceTokens } from './container';
+import { container, ServiceTokens, ServiceToken } from './container';
 import db from '../db';
 import { createChallengeService } from '../services/challengeService';
 import adaptiveChallengeService from '../services/adaptiveChallengeService';
@@ -8,6 +8,8 @@ import xpService from '../services/xpService';
 import streakService from '../services/streakService';
 import leaderboardService from '../services/leaderboardService';
 import challengeStatsService from '../services/challengeStatsService';
+import { createEchoScoreService } from '../services/echoScoreService';
+import { EchoScoreServiceToken } from '../controllers/echoScoreController';
 
 /**
  * Register all services in the DI container
@@ -41,6 +43,11 @@ export function registerServices(): void {
       container.get(ServiceTokens.ChallengeStatsService)
     );
   });
+
+  // Register EchoScoreService
+  container.register(EchoScoreServiceToken, () => {
+    return createEchoScoreService(container.get(ServiceTokens.Database));
+  });
 }
 
 /**
@@ -48,6 +55,6 @@ export function registerServices(): void {
  * @param token Service token
  * @returns Service instance
  */
-export function getService<T>(token: string): T {
-  return container.get<T>(token);
+export function getService<T>(token: ServiceToken<T>): T {
+  return container.get(token);
 } 

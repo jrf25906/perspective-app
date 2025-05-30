@@ -1,4 +1,6 @@
-import { EchoScoreService } from './echoScoreService';
+import { IEchoScoreService } from './echoScoreService';
+import { getService } from '../di/serviceRegistration';
+import { EchoScoreServiceToken } from '../controllers/echoScoreController';
 import db from '../db';
 
 export class EchoScoreScheduler {
@@ -30,7 +32,8 @@ export class EchoScoreScheduler {
 
       if (todayResponses && Number(todayResponses.count) >= 3) {
         console.log(`Calculating Echo Score for user ${userId} after ${todayResponses.count} challenges`);
-        await EchoScoreService.calculateAndSaveEchoScore(userId);
+        const echoScoreService = getService(EchoScoreServiceToken);
+        await echoScoreService.calculateAndSaveEchoScore(userId);
       }
     } catch (error) {
       console.error(`Error in Echo Score calculation after challenge:`, error);
@@ -62,7 +65,8 @@ export class EchoScoreScheduler {
 
         if (todayScores && Number(todayScores.count) === 0) {
           console.log(`Calculating Echo Score for user ${userId} after reading from ${todaySources.length} sources`);
-          await EchoScoreService.calculateAndSaveEchoScore(userId);
+          const echoScoreService = getService(EchoScoreServiceToken);
+          await echoScoreService.calculateAndSaveEchoScore(userId);
         }
       }
     } catch (error) {
@@ -95,9 +99,10 @@ export class EchoScoreScheduler {
       console.log(`Found ${activeUsers.length} active users without Echo Score for ${yesterdayStr}`);
 
       // Calculate scores for each active user
+      const echoScoreService = getService(EchoScoreServiceToken);
       for (const user of activeUsers) {
         try {
-          await EchoScoreService.calculateAndSaveEchoScore(user.user_id);
+          await echoScoreService.calculateAndSaveEchoScore(user.user_id);
           console.log(`Calculated Echo Score for user ${user.user_id}`);
         } catch (error) {
           console.error(`Failed to calculate Echo Score for user ${user.user_id}:`, error);

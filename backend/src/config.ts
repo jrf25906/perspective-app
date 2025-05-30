@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load environment variables once at the top of the application
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 export interface DatabaseSettings {
   client: string;
@@ -13,13 +15,42 @@ export interface DatabaseSettings {
 }
 
 export interface GeneralSettings {
-  env: string;
+  env: 'development' | 'production' | 'test';
   port: number;
+}
+
+export interface ServerSettings {
+  port: number;
+  environment: 'development' | 'production' | 'test';
+  cors: {
+    origin: string | string[];
+    credentials: boolean;
+    methods: string[];
+    allowedHeaders: string[];
+  };
+  bodyParser: {
+    jsonLimit: string;
+    urlencodedLimit: string;
+  };
+  version: string;
+  maintenance: {
+    enabled: boolean;
+    endTime: string;
+  };
+}
+
+export interface SecuritySettings {
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  rateLimitWindowMs: number;
+  rateLimitMaxRequests: number;
 }
 
 export interface Config {
   database: DatabaseSettings;
   general: GeneralSettings;
+  server: ServerSettings;
+  security: SecuritySettings;
 }
 
 const config: Config = {
@@ -33,9 +64,39 @@ const config: Config = {
     ssl: process.env.DB_SSL === 'true',
   },
   general: {
-    env: process.env.NODE_ENV || 'development',
+    env: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
     port: parseInt(process.env.PORT || '3000', 10),
   },
+  server: {
+    port: parseInt(process.env.PORT || '3000', 10),
+    environment: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
+    cors: {
+      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+    },
+    bodyParser: {
+      jsonLimit: '10mb',
+      urlencodedLimit: '10mb'
+    },
+    version: process.env.npm_package_version || '1.0.0',
+    maintenance: {
+      enabled: process.env.MAINTENANCE_MODE === 'true',
+      endTime: process.env.MAINTENANCE_END_TIME || 'Unknown'
+    }
+  },
+  security: {
+    jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
+    rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
+  }
 };
 
 export default config;
+
+// Export convenience helpers
+export const isProduction = config.general.env === 'production';
+export const isDevelopment = config.general.env === 'development';
+export const isTest = config.general.env === 'test';

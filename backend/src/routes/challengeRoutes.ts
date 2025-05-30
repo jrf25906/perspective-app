@@ -10,17 +10,18 @@ import {
   getChallengeHistory
 } from "../controllers/challengeController";
 import { authenticateToken } from "../middleware/auth";
+import { authRequired } from "../middleware/authRequired";
 
 const router = Router();
 
-// Protected routes (require authentication)
-router.get("/today", authenticateToken, getTodayChallenge);
-router.get("/adaptive/next", authenticateToken, getAdaptiveChallenge);
-router.get("/adaptive/recommendations", authenticateToken, getAdaptiveRecommendations);
-router.get("/progress", authenticateToken, getUserProgress);
-router.get("/history", authenticateToken, getChallengeHistory);
-router.post("/:id/submit", authenticateToken, submitChallenge);
-router.get("/stats", authenticateToken, getChallengeStats);
+// Protected routes (require authentication with automatic 401 response)
+router.get("/today", authenticateToken, authRequired, getTodayChallenge);
+router.get("/adaptive/next", authenticateToken, authRequired, getAdaptiveChallenge);
+router.get("/adaptive/recommendations", authenticateToken, authRequired, getAdaptiveRecommendations);
+router.get("/progress", authenticateToken, authRequired, getUserProgress);
+router.get("/history", authenticateToken, authRequired, getChallengeHistory);
+router.post("/:id/submit", authenticateToken, authRequired, submitChallenge);
+router.get("/stats", authenticateToken, authRequired, getChallengeStats);
 
 // Public routes
 router.get("/leaderboard", getLeaderboard);

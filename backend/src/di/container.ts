@@ -17,13 +17,37 @@ export interface ServiceContainer {
 }
 
 /**
+ * Service token type definition
+ */
+export interface ServiceToken<T> {
+  readonly name: string;
+  readonly _type?: T;
+}
+
+/**
+ * Create a typed service token
+ */
+export function createServiceToken<T>(name: string): ServiceToken<T> {
+  return { name };
+}
+
+/**
+ * Type-safe service registry
+ */
+interface ServiceRegistry {
+  [key: string]: {
+    instance?: any;
+    factory?: () => any;
+  };
+}
+
+/**
  * Dependency Injection Container
  * Manages service instances and their dependencies
  */
 export class DIContainer {
   private static instance: DIContainer;
-  private services: Map<string, any> = new Map();
-  private factories: Map<string, () => any> = new Map();
+  private registry: ServiceRegistry = {};
 
   private constructor() {}
 
@@ -40,57 +64,60 @@ export class DIContainer {
   /**
    * Register a service factory
    */
-  register<T>(token: string, factory: () => T): void {
-    this.factories.set(token, factory);
+  register<T>(token: ServiceToken<T>, factory: () => T): void {
+    this.registry[token.name] = { factory };
   }
 
   /**
    * Register a singleton service
    */
-  registerSingleton<T>(token: string, instance: T): void {
-    this.services.set(token, instance);
+  registerSingleton<T>(token: ServiceToken<T>, instance: T): void {
+    this.registry[token.name] = { instance };
   }
 
   /**
    * Get a service instance
    */
-  get<T>(token: string): T {
-    // Check if we have a singleton instance
-    if (this.services.has(token)) {
-      return this.services.get(token);
+  get<T>(token: ServiceToken<T>): T {
+    const registration = this.registry[token.name];
+    if (!registration) {
+      throw new Error(`Service not found: ${token.name}`);
     }
 
-    // Check if we have a factory
-    if (this.factories.has(token)) {
-      const instance = this.factories.get(token)!();
-      // Cache the instance as a singleton
-      this.services.set(token, instance);
+    // Return existing instance if available
+    if (registration.instance) {
+      return registration.instance;
+    }
+
+    // Create instance from factory
+    if (registration.factory) {
+      const instance = registration.factory();
+      registration.instance = instance;
       return instance;
     }
 
-    throw new Error(`Service not found: ${token}`);
+    throw new Error(`Service not properly registered: ${token.name}`);
   }
 
   /**
    * Clear all services (useful for testing)
    */
   clear(): void {
-    this.services.clear();
-    this.factories.clear();
+    this.registry = {};
   }
 }
 
 // Service tokens
 export const ServiceTokens = {
-  ChallengeService: 'ChallengeService',
-  AdaptiveChallengeService: 'AdaptiveChallengeService',
-  ChallengeRepository: 'ChallengeRepository',
-  XPService: 'XPService',
-  StreakService: 'StreakService',
-  LeaderboardService: 'LeaderboardService',
-  ChallengeStatsService: 'ChallengeStatsService',
-  ChallengeAnswerService: 'ChallengeAnswerService',
-  Database: 'Database'
+  ChallengeService: createServiceToken<IChallengeService>('ChallengeService'),
+  AdaptiveChallengeService: createServiceToken<IAdaptiveChallengeService>('AdaptiveChallengeService'),
+  ChallengeRepository: createServiceToken<IChallengeRepository>('ChallengeRepository'),
+  XPService: createServiceToken<IXPService>('XPService'),
+  StreakService: createServiceToken<IStreakService>('StreakService'),
+  LeaderboardService: createServiceToken<any>('LeaderboardService'), // TODO: Add interface
+  ChallengeStatsService: createServiceToken<any>('ChallengeStatsService'), // TODO: Add interface
+  ChallengeAnswerService: createServiceToken<any>('ChallengeAnswerService'), // TODO: Add interface
+  Database: createServiceToken<any>('Database')
 } as const;
 
 // Export singleton instance

@@ -3,10 +3,18 @@
  * Components: diversity, accuracy, switch-speed, consistency, improvement.
  */
 import { EchoScore, EchoScoreCalculationDetails, EchoScoreHistory } from '../models/EchoScore';
-import db from '../db';
+import { Knex } from 'knex';
 
-export class EchoScoreService {
-  private static readonly WEIGHTS = {
+export interface IEchoScoreService {
+  calculateEchoScore(userId: number): Promise<EchoScore>;
+  calculateAndSaveEchoScore(userId: number): Promise<EchoScoreHistory>;
+  getEchoScoreHistory(userId: number, days?: number): Promise<EchoScoreHistory[]>;
+  getLatestEchoScore(userId: number): Promise<EchoScoreHistory | null>;
+  getScoreProgress(userId: number, period: 'daily' | 'weekly'): Promise<any>;
+}
+
+export class EchoScoreService implements IEchoScoreService {
+  private readonly WEIGHTS = {
     diversity: 0.25,
     accuracy: 0.25,
     switch_speed: 0.20,
@@ -14,7 +22,9 @@ export class EchoScoreService {
     improvement: 0.15
   };
 
-  static async calculateEchoScore(userId: number): Promise<EchoScore> {
+  constructor(private readonly db: Knex) {}
+
+  async calculateEchoScore(userId: number): Promise<EchoScore> {
     const [diversity, accuracy, switchSpeed, consistency, improvement] = await Promise.all([
       this.calculateDiversityScore(userId),
       this.calculateAccuracyScore(userId),
@@ -41,12 +51,12 @@ export class EchoScoreService {
     };
   }
 
-  static async calculateAndSaveEchoScore(userId: number): Promise<EchoScoreHistory> {
+  async calculateAndSaveEchoScore(userId: number): Promise<EchoScoreHistory> {
     const score = await this.calculateEchoScore(userId);
     const calculationDetails = await this.getCalculationDetails(userId);
 
     // Save to history
-    const [savedScore] = await db('echo_score_history')
+    const [savedScore] = await this.db('echo_score_history')
       .insert({
         user_id: userId,
         total_score: score.total_score,
@@ -63,15 +73,15 @@ export class EchoScoreService {
       .returning('*');
 
     // Update user's current score
-    await db('users')
+    await this.db('users')
       .where('id', userId)
       .update({ echo_score: score.total_score });
 
     return savedScore;
   }
 
-  static async getEchoScoreHistory(userId: number, days?: number): Promise<EchoScoreHistory[]> {
-    let query = db('echo_score_history')
+  async getEchoScoreHistory(userId: number, days?: number): Promise<EchoScoreHistory[]> {
+    let query = this.db('echo_score_history')
       .where('user_id', userId)
       .orderBy('score_date', 'desc');
 
@@ -92,8 +102,8 @@ export class EchoScoreService {
     }));
   }
 
-  static async getLatestEchoScore(userId: number): Promise<EchoScoreHistory | null> {
-    const score = await db('echo_score_history')
+  async getLatestEchoScore(userId: number): Promise<EchoScoreHistory | null> {
+    const score = await this.db('echo_score_history')
       .where('user_id', userId)
       .orderBy('score_date', 'desc')
       .first();
@@ -108,7 +118,7 @@ export class EchoScoreService {
     };
   }
 
-  static async getScoreProgress(userId: number, period: 'daily' | 'weekly' = 'daily'): Promise<any> {
+  async getScoreProgress(userId: number, period: 'daily' | 'weekly' = 'daily'): Promise<any> {
     const days = period === 'daily' ? 7 : 28;
     const history = await this.getEchoScoreHistory(userId, days);
 
@@ -138,7 +148,7 @@ export class EchoScoreService {
     return progress;
   }
 
-  private static async getCalculationDetails(userId: number): Promise<EchoScoreCalculationDetails> {
+  private async getCalculationDetails(userId: number): Promise<EchoScoreCalculationDetails> {
     const [
       diversityMetrics,
       accuracyMetrics,
@@ -162,11 +172,11 @@ export class EchoScoreService {
     };
   }
 
-  private static async getDiversityMetrics(userId: number): Promise<any> {
-    const articles = await db('user_reading_activity')
+  private async getDiversityMetrics(userId: number): Promise<any> {
+    const articles = await this.db('user_reading_activity')
       .join('news_articles', 'user_reading_activity.article_id', 'news_articles.id')
       .where('user_reading_activity.user_id', userId)
-      .where('user_reading_activity.created_at', '>=', db.raw("NOW() - INTERVAL '7 days'"))
+      .where('user_reading_activity.created_at', '>=', this.db.raw("NOW() - INTERVAL '7 days'"))
       .select('news_articles.source', 'news_articles.bias_rating');
 
     const biasRatings = articles.map(a => a.bias_rating || 0);
@@ -181,19 +191,19 @@ export class EchoScoreService {
     };
   }
 
-  private static async getAccuracyMetrics(userId: number): Promise<any> {
-    const responses = await db('user_responses')
+  private async getAccuracyMetrics(userId: number): Promise<any> {
+    const responses = await this.db('user_responses')
       .where('user_id', userId)
-      .where('created_at', '>=', db.raw("NOW() - INTERVAL '30 days'"))
+      .where('created_at', '>=', this.db.raw("NOW() - INTERVAL '30 days'"))
       .select('is_correct');
 
     const correctCount = responses.filter(r => r.is_correct).length;
     const totalCount = responses.length;
 
     // Recent accuracy (last 7 days)
-    const recentResponses = await db('user_responses')
+    const recentResponses = await this.db('user_responses')
       .where('user_id', userId)
-      .where('created_at', '>=', db.raw("NOW() - INTERVAL '7 days'"))
+      .where('created_at', '>=', this.db.raw("NOW() - INTERVAL '7 days'"))
       .select('is_correct');
 
     const recentCorrect = recentResponses.filter(r => r.is_correct).length;
@@ -207,12 +217,12 @@ export class EchoScoreService {
     };
   }
 
-  private static async getSpeedMetrics(userId: number): Promise<any> {
-    const responses = await db('user_responses')
+  private async getSpeedMetrics(userId: number): Promise<any> {
+    const responses = await this.db('user_responses')
       .join('challenges_v2', 'user_responses.challenge_id', 'challenges_v2.id')
       .where('user_responses.user_id', userId)
       .where('challenges_v2.type', 'bias_swap')
-      .where('user_responses.created_at', '>=', db.raw("NOW() - INTERVAL '30 days'"))
+      .where('user_responses.created_at', '>=', this.db.raw("NOW() - INTERVAL '30 days'"))
       .select('user_responses.time_spent_seconds')
       .orderBy('user_responses.created_at', 'desc');
 
@@ -232,17 +242,17 @@ export class EchoScoreService {
     };
   }
 
-  private static async getConsistencyMetrics(userId: number): Promise<any> {
+  private async getConsistencyMetrics(userId: number): Promise<any> {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-    const activeDaysResult = await db('user_sessions')
+    const activeDaysResult = await this.db('user_sessions')
       .where('user_id', userId)
       .where('session_start', '>=', fourteenDaysAgo)
-      .select(db.raw('COUNT(DISTINCT DATE(session_start)) as active_days'))
+      .select(this.db.raw('COUNT(DISTINCT DATE(session_start)) as active_days'))
       .first() as unknown as { active_days: number } | undefined;
 
-    const user = await db('users')
+    const user = await this.db('users')
       .where('id', userId)
       .select('current_streak')
       .first();
@@ -254,10 +264,10 @@ export class EchoScoreService {
     };
   }
 
-  private static async getImprovementMetrics(userId: number): Promise<any> {
-    const responses = await db('user_responses')
+  private async getImprovementMetrics(userId: number): Promise<any> {
+    const responses = await this.db('user_responses')
       .where('user_id', userId)
-      .where('created_at', '>=', db.raw("NOW() - INTERVAL '30 days'"))
+      .where('created_at', '>=', this.db.raw("NOW() - INTERVAL '30 days'"))
       .orderBy('created_at', 'asc')
       .select('is_correct', 'time_spent_seconds', 'created_at');
 
@@ -278,9 +288,9 @@ export class EchoScoreService {
     const speedSlope = speedPoints.length > 1 ? this.calculateTrendSlope(speedPoints) : 0;
 
     // Calculate diversity slope
-    const diversityHistory = await db('echo_score_history')
+    const diversityHistory = await this.db('echo_score_history')
       .where('user_id', userId)
-      .where('score_date', '>=', db.raw("NOW() - INTERVAL '30 days'"))
+      .where('score_date', '>=', this.db.raw("NOW() - INTERVAL '30 days'"))
       .orderBy('score_date', 'asc')
       .select('diversity_score');
 
@@ -297,7 +307,7 @@ export class EchoScoreService {
     };
   }
 
-  private static async calculateDiversityScore(userId: number): Promise<number> {
+  private async calculateDiversityScore(userId: number): Promise<number> {
     // Get user's reading activity from last 7 days
     const recentActivity = await this.getUserReadingActivity(userId, 7);
     
@@ -313,7 +323,7 @@ export class EchoScoreService {
     return Math.min(100, giniIndex * 100);
   }
 
-  private static async calculateAccuracyScore(userId: number): Promise<number> {
+  private async calculateAccuracyScore(userId: number): Promise<number> {
     // Get recent responses (last 30 days)
     const recentResponses = await this.getUserResponses(userId, 30);
     
@@ -323,7 +333,7 @@ export class EchoScoreService {
     return (correctCount / recentResponses.length) * 100;
   }
 
-  private static async calculateSwitchSpeedScore(userId: number): Promise<number> {
+  private async calculateSwitchSpeedScore(userId: number): Promise<number> {
     // Get responses with perspective switching challenges
     const switchingResponses = await this.getSwitchingChallengeResponses(userId, 30);
     
@@ -341,13 +351,13 @@ export class EchoScoreService {
     return ((maxTime - normalizedTime) / (maxTime - minTime)) * 100;
   }
 
-  private static async calculateConsistencyScore(userId: number): Promise<number> {
+  private async calculateConsistencyScore(userId: number): Promise<number> {
     // Get user activity over last 14 days
     const activityDays = await this.getUserActivityDays(userId, 14);
     return (activityDays / 14) * 100;
   }
 
-  private static async calculateImprovementScore(userId: number): Promise<number> {
+  private async calculateImprovementScore(userId: number): Promise<number> {
     // Calculate slopes of accuracy and speed over 30-day window
     const responses = await this.getUserResponsesWithDates(userId, 30);
     
@@ -366,7 +376,7 @@ export class EchoScoreService {
     return improvementScore;
   }
 
-  private static calculateGiniIndex(values: number[]): number {
+  private calculateGiniIndex(values: number[]): number {
     if (values.length === 0) return 0;
     
     const sorted = values.sort((a, b) => a - b);
@@ -381,7 +391,7 @@ export class EchoScoreService {
     return sum / (n * n * mean);
   }
 
-  private static calculateMedian(values: number[]): number {
+  private calculateMedian(values: number[]): number {
     const sorted = values.sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 === 0 
@@ -389,7 +399,7 @@ export class EchoScoreService {
       : sorted[mid];
   }
 
-  private static calculateTrendSlope(points: { x: number; y: number }[]): number {
+  private calculateTrendSlope(points: { x: number; y: number }[]): number {
     if (points.length < 2) return 0;
     
     const n = points.length;
@@ -404,7 +414,7 @@ export class EchoScoreService {
     return (n * sumXY - sumX * sumY) / denominator;
   }
 
-  private static calculateTrend(values: number[]): number {
+  private calculateTrend(values: number[]): number {
     if (values.length < 2) return 0;
     
     const points = values.map((v, i) => ({ x: i, y: v }));
@@ -412,32 +422,32 @@ export class EchoScoreService {
   }
 
   // Database query methods implementation
-  private static async getUserReadingActivity(userId: number, days: number): Promise<any[]> {
+  private async getUserReadingActivity(userId: number, days: number): Promise<any[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    return await db('user_reading_activity')
+    return await this.db('user_reading_activity')
       .join('news_articles', 'user_reading_activity.article_id', 'news_articles.id')
       .where('user_reading_activity.user_id', userId)
       .where('user_reading_activity.created_at', '>=', startDate)
       .select('news_articles.*', 'user_reading_activity.time_spent_seconds', 'user_reading_activity.completion_percentage');
   }
 
-  private static async getUserResponses(userId: number, days: number): Promise<any[]> {
+  private async getUserResponses(userId: number, days: number): Promise<any[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    return await db('user_responses')
+    return await this.db('user_responses')
       .where('user_id', userId)
       .where('created_at', '>=', startDate)
       .select('*');
   }
 
-  private static async getSwitchingChallengeResponses(userId: number, days: number): Promise<any[]> {
+  private async getSwitchingChallengeResponses(userId: number, days: number): Promise<any[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    return await db('user_responses')
+    return await this.db('user_responses')
       .join('challenges_v2', 'user_responses.challenge_id', 'challenges_v2.id')
       .where('user_responses.user_id', userId)
       .where('challenges_v2.type', 'bias_swap')
@@ -445,27 +455,34 @@ export class EchoScoreService {
       .select('user_responses.*');
   }
 
-  private static async getUserActivityDays(userId: number, days: number): Promise<number> {
+  private async getUserActivityDays(userId: number, days: number): Promise<number> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const result = await db('user_sessions')
+    const result = await this.db('user_sessions')
       .where('user_id', userId)
       .where('session_start', '>=', startDate)
-      .select(db.raw('COUNT(DISTINCT DATE(session_start)) as active_days'))
+      .select(this.db.raw('COUNT(DISTINCT DATE(session_start)) as active_days'))
       .first() as unknown as { active_days: number } | undefined;
 
     return result?.active_days || 0;
   }
 
-  private static async getUserResponsesWithDates(userId: number, days: number): Promise<any[]> {
+  private async getUserResponsesWithDates(userId: number, days: number): Promise<any[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    return await db('user_responses')
+    return await this.db('user_responses')
       .where('user_id', userId)
       .where('created_at', '>=', startDate)
       .orderBy('created_at', 'asc')
       .select('*');
   }
+}
+
+/**
+ * Factory function to create EchoScoreService instance
+ */
+export function createEchoScoreService(db: Knex): IEchoScoreService {
+  return new EchoScoreService(db);
 }

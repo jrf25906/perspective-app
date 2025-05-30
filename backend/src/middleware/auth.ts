@@ -1,5 +1,6 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import config from '../config';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -22,7 +23,7 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err: any, user: any) => {
+  jwt.verify(token, config.security.jwtSecret, (err: any, user: any) => {
     if (err) {
       return res.status(403).json({ 
         error: { 
@@ -38,13 +39,15 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 };
 
 export const generateToken = (user: { id: number; email: string; username: string }): string => {
-  return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
-      username: user.username 
-    },
-    process.env.JWT_SECRET || 'your-secret-key',
-    { expiresIn: '7d' }
-  );
+  const payload = { 
+    id: user.id, 
+    email: user.email, 
+    username: user.username 
+  };
+  
+  const options: SignOptions = {
+    expiresIn: '7d' // Use direct value for now
+  };
+  
+  return jwt.sign(payload, config.security.jwtSecret, options);
 }; 
