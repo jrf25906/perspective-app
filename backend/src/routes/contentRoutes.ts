@@ -59,9 +59,17 @@ router.get('/search', async (req: Request, res: Response) => {
     }
     
     if (sources) {
-      filters.sources = Array.isArray(sources) 
-        ? sources.map(s => Number(s))
-        : [Number(sources)];
+      if (Array.isArray(sources)) {
+        filters.sources = sources.map(s => Number(s));
+      } else {
+        // Handle comma-separated string
+        const sourceString = sources as string;
+        if (sourceString.includes(',')) {
+          filters.sources = sourceString.split(',').map(s => Number(s.trim()));
+        } else {
+          filters.sources = [Number(sourceString)];
+        }
+      }
     }
     
     const articles = await Content.searchArticles(q as string, filters);

@@ -45,13 +45,14 @@ export class ChallengeRepository {
    * Get today's challenge selection for a user
    */
   async getTodaysChallengeSelection(userId: number): Promise<DailyChallengeSelection | null> {
+    // Use UTC date to ensure consistency across time zones
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
     
     const selection = await db('daily_challenge_selections')
       .where({
         user_id: userId,
-        selection_date: today
+        selection_date: todayUTC
       })
       .first();
     
@@ -78,10 +79,11 @@ export class ChallengeRepository {
    * Convenience method that uses today's date
    */
   async recordDailyChallengeSelection(userId: number, challengeId: number): Promise<void> {
+    // Use UTC date to ensure consistency across time zones
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
     
-    await this.saveDailyChallengeSelection(userId, challengeId, today);
+    await this.saveDailyChallengeSelection(userId, challengeId, todayUTC);
   }
 
   /**

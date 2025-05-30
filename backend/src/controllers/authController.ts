@@ -132,7 +132,7 @@ export class AuthController {
         user = await UserService.create({
           email,
           username: finalUsername,
-          password_hash: '', // Empty for Google users
+          password_hash: null, // Null for Google users instead of empty string
           first_name: given_name || name?.split(' ')[0] || null,
           last_name: family_name || name?.split(' ').slice(1).join(' ') || null,
           google_id: payload.sub,
@@ -196,6 +196,16 @@ export class AuthController {
       // Find user
       const user = await UserService.findByEmail(email);
       if (!user) {
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid email or password'
+          }
+        });
+      }
+
+      // Check if user has a password (not a Google-only user)
+      if (!user.password_hash) {
         return res.status(401).json({
           error: {
             code: 'INVALID_CREDENTIALS',

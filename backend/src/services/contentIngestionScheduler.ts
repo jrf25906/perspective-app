@@ -1,4 +1,5 @@
 import * as cron from 'node-cron';
+const cronParser = require('cron-parser');
 import contentCurationService from './contentCurationService';
 import Content from '../models/Content';
 import db from '../db';
@@ -220,7 +221,7 @@ class ContentIngestionScheduler {
     const sources = await db('news_sources')
       .select('news_sources.id', 'news_sources.name')
       .count('content.id as total_articles')
-      .sum(db.raw('CASE WHEN content.is_verified THEN 1 ELSE 0 END') + ' as verified_articles')
+      .sum(db.raw('CASE WHEN content.is_verified THEN 1 ELSE 0 END as verified_articles'))
       .leftJoin('content', 'news_sources.id', 'content.source_id')
       .where('news_sources.is_active', true)
       .groupBy('news_sources.id', 'news_sources.name');
@@ -353,21 +354,14 @@ class ContentIngestionScheduler {
    * Calculate next run time based on cron expression
    */
   private getNextRunTime(): Date | null {
-    // This is a simplified implementation
-    // In production, use a cron parser library
-    const now = new Date();
-    const parts = this.config.schedule.split(' ');
-    
-    if (parts[1] === '*/6') { // Every 6 hours
-      const nextRun = new Date(now);
-      nextRun.setHours(Math.ceil(now.getHours() / 6) * 6, 0, 0, 0);
-      if (nextRun <= now) {
-        nextRun.setHours(nextRun.getHours() + 6);
-      }
-      return nextRun;
+    try {
+      const interval = cronParser.parseExpression(this.config.schedule);
+      const nextRun = interval.next();
+      return nextRun.toDate();
+    } catch (err) {
+      console.error('Error parsing cron expression:', err);
+      return null;
     }
-    
-    return null;
   }
 }
 
