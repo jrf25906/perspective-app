@@ -121,6 +121,7 @@ fastlane/test_output
 
 # Build outputs
 dist/
+backend/uploads/
 
 # SQLite databases
 *.sqlite

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ProfileController } from "../controllers/profileController";
 import { authenticateToken } from "../middleware/auth";
+import { avatarUpload } from "../middleware/upload";
 
 const router = Router();
 
@@ -14,6 +15,6 @@ router.put("/", ProfileController.updateProfile);
 // Profile-specific endpoints
 router.get("/echo-score", ProfileController.getEchoScore);
 router.get("/stats", ProfileController.getProfileStats);
-router.post("/avatar", ProfileController.uploadAvatar);
+router.post("/avatar", avatarUpload, ProfileController.uploadAvatar);
 
 export default router;

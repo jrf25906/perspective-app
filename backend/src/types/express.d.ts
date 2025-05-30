@@ -6,5 +6,6 @@ declare namespace Express {
       username?: string;
       role?: string;
     };
+    file?: Express.Multer.File;
   }
-} 
+}

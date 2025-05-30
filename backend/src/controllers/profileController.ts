@@ -268,15 +268,24 @@ export class ProfileController {
         });
       }
 
-      // This is a placeholder for avatar upload functionality
-      // In a real implementation, you'd handle file upload with multer or similar
-      // and upload to a storage service like AWS S3
-      
-      res.status(501).json({
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Avatar upload not yet implemented'
-        }
+      if (!req.file) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'No avatar file uploaded'
+          }
+        });
+      }
+
+      const fileUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+
+      const updatedUser = await UserService.updateProfile(req.user.id, { avatar_url: fileUrl });
+
+      const { password_hash: _, ...userWithoutPassword } = updatedUser;
+
+      res.json({
+        user: userWithoutPassword,
+        message: 'Avatar uploaded successfully'
       });
 
     } catch (error) {

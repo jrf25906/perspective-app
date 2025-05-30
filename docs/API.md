@@ -39,6 +39,7 @@ Authorization: Bearer <your-token>
 
 - `GET /users/profile` - Get user profile
 - `PUT /users/profile` - Update user profile
+- `POST /users/avatar` - Upload user avatar
 - `GET /users/:id` - Get user by ID
 
 ### Echo Score
