@@ -127,7 +127,8 @@ contentIngestionScheduler.initialize({
 
 // Main API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/challenges', challengeRoutes);
+// Expose challenge routes without the /api prefix for simplicity
+app.use('/challenge', challengeRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
