@@ -117,6 +117,7 @@ export const ServiceTokens = {
   LeaderboardService: createServiceToken<any>('LeaderboardService'), // TODO: Add interface
   ChallengeStatsService: createServiceToken<any>('ChallengeStatsService'), // TODO: Add interface
   ChallengeAnswerService: createServiceToken<any>('ChallengeAnswerService'), // TODO: Add interface
+  EchoScoreService: createServiceToken<any>('EchoScoreService'), // TODO: Add IEchoScoreService import
   Database: createServiceToken<any>('Database')
 } as const;
 

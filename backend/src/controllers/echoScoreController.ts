@@ -3,14 +3,11 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { IEchoScoreService } from '../services/echoScoreService';
 import { getService } from '../di/serviceRegistration';
-import { ServiceTokens, createServiceToken } from '../di/container';
+import { ServiceTokens } from '../di/container';
 import { asyncHandler } from '../utils/asyncHandler';
 
-// Create service token for EchoScoreService
-export const EchoScoreServiceToken = createServiceToken<IEchoScoreService>('EchoScoreService');
-
 // Get service from DI container
-const getEchoScoreService = (): IEchoScoreService => getService(EchoScoreServiceToken);
+const getEchoScoreService = (): IEchoScoreService => getService(ServiceTokens.EchoScoreService);
 
 export class EchoScoreController {
   /**

@@ -9,7 +9,6 @@ import streakService from '../services/streakService';
 import leaderboardService from '../services/leaderboardService';
 import challengeStatsService from '../services/challengeStatsService';
 import { createEchoScoreService } from '../services/echoScoreService';
-import { EchoScoreServiceToken } from '../controllers/echoScoreController';
 
 /**
  * Register all services in the DI container
@@ -45,7 +44,7 @@ export function registerServices(): void {
   });
 
   // Register EchoScoreService
-  container.register(EchoScoreServiceToken, () => {
+  container.register(ServiceTokens.EchoScoreService, () => {
     return createEchoScoreService(container.get(ServiceTokens.Database));
   });
 }

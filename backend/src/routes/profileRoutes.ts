@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ProfileController } from "../controllers/profileController";
 import { authenticateToken } from "../middleware/auth";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
@@ -8,12 +9,12 @@ const router = Router();
 router.use(authenticateToken);
 
 // Profile CRUD operations
-router.get("/", ProfileController.getProfile);
-router.put("/", ProfileController.updateProfile);
+router.get("/", asyncHandler(ProfileController.getProfile));
+router.put("/", asyncHandler(ProfileController.updateProfile));
 
 // Profile-specific endpoints
-router.get("/echo-score", ProfileController.getEchoScore);
-router.get("/stats", ProfileController.getProfileStats);
-router.post("/avatar", ProfileController.uploadAvatar);
+router.get("/echo-score", asyncHandler(ProfileController.getEchoScore));
+router.get("/stats", asyncHandler(ProfileController.getProfileStats));
+router.post("/avatar", asyncHandler(ProfileController.uploadAvatar));
 
 export default router;
