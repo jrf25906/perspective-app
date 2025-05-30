@@ -144,6 +144,30 @@ class OfflineDataManager: ObservableObject {
             print("Failed to save challenge responses: \(error)")
         }
     }
+
+    func getPendingChallengeResponses() -> [ChallengeResponse] {
+        return getChallengeResponses().filter { $0.syncStatus == .pending }
+    }
+
+    func markChallengeResponsesSynced(_ responses: [ChallengeResponse]) {
+        var stored = getChallengeResponses()
+
+        for index in stored.indices {
+            if stored[index].syncStatus == .pending && responses.contains(where: { $0.challengeId == stored[index].challengeId && $0.submittedAt == stored[index].submittedAt }) {
+                stored[index] = ChallengeResponse(
+                    challengeId: stored[index].challengeId,
+                    userAnswer: stored[index].userAnswer,
+                    timeSpent: stored[index].timeSpent,
+                    isCorrect: stored[index].isCorrect,
+                    submittedAt: stored[index].submittedAt,
+                    syncStatus: .synced
+                )
+            }
+        }
+
+        saveChallengeResponses(stored)
+        updatePendingSyncCount()
+    }
     
     // MARK: - Challenge Caching
     

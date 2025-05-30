@@ -52,19 +52,73 @@ class BackgroundTaskManager: ObservableObject {
 }
 
 class BackgroundSyncOperation: Operation, @unchecked Sendable {
+    private var cancellables = Set<AnyCancellable>()
+
     override func main() {
         guard !isCancelled else { return }
-        
-        // Simplified background sync - just print for now
-        print("Performing background sync...")
-        
-        // TODO: Implement actual sync logic here
-        // - Sync pending challenge responses
-        // - Update echo scores
-        // - Fetch new challenges
-        
-        Thread.sleep(forTimeInterval: 1) // Simulate work
-        
+
+        let api = APIService.shared
+        let offline = OfflineDataManager.shared
+        let pending = offline.getPendingChallengeResponses()
+        let group = DispatchGroup()
+
+        for response in pending {
+            if isCancelled { break }
+
+            group.enter()
+            api.submitChallenge(challengeId: response.challengeId,
+                                userAnswer: response.userAnswer,
+                                timeSpent: response.timeSpent)
+                .sink(receiveCompletion: { completion in
+                    if case .failure(let err) = completion {
+                        print("Sync failed for challenge \(response.challengeId): \(err)")
+                    } else {
+                        offline.markChallengeResponsesSynced([response])
+                    }
+                    group.leave()
+                }, receiveValue: { _ in })
+                .store(in: &cancellables)
+        }
+
+        group.wait()
+
+        guard !isCancelled else { return }
+
+        group.enter()
+        api.getEchoScore()
+            .sink(receiveCompletion: { _ in
+                group.leave()
+            }, receiveValue: { score in
+                print("Updated echo score: \(score.totalScore)")
+            })
+            .store(in: &cancellables)
+
+        group.wait()
+
+        guard !isCancelled else { return }
+
+        group.enter()
+        api.getTodayChallenge()
+            .sink(receiveCompletion: { _ in
+                group.leave()
+            }, receiveValue: { challenge in
+                offline.cacheChallenge(challenge)
+            })
+            .store(in: &cancellables)
+        group.wait()
+
+        guard !isCancelled else { return }
+
+        group.enter()
+        api.getAdaptiveChallenge()
+            .sink(receiveCompletion: { _ in
+                group.leave()
+            }, receiveValue: { challenge in
+                offline.cacheChallenge(challenge)
+            })
+            .store(in: &cancellables)
+
+        group.wait()
         print("Background sync completed")
     }
 }

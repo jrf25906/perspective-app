@@ -148,6 +148,15 @@ class APIService: ObservableObject {
             responseType: [LeaderboardEntry].self
         )
     }
+
+    func getAdaptiveChallenge() -> AnyPublisher<Challenge, APIError> {
+        return makeAuthenticatedRequest(
+            endpoint: "/challenge/adaptive/next",
+            method: "GET",
+            body: Optional<String>.none,
+            responseType: Challenge.self
+        )
+    }
     
     // MARK: - Echo Score
     
