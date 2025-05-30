@@ -20,6 +20,10 @@ export class UserService {
     return db<User>('users').where({ email }).first();
   }
 
+  static async findByUsername(username: string): Promise<User | undefined> {
+    return db<User>('users').where({ username }).first();
+  }
+
   static async findById(id: number): Promise<User | undefined> {
     return db<User>('users').where({ id }).first();
   }
@@ -28,5 +32,14 @@ export class UserService {
     await db('users')
       .where({ id })
       .update({ last_activity_date: db.fn.now(), updated_at: db.fn.now() });
+  }
+
+  static async updateGoogleInfo(id: number, googleInfo: { google_id: string; avatar_url?: string; email_verified?: boolean }): Promise<void> {
+    await db('users')
+      .where({ id })
+      .update({ 
+        ...googleInfo, 
+        updated_at: db.fn.now() 
+      });
   }
 }

@@ -8,7 +8,7 @@ struct AuthenticationView: View {
             VStack(spacing: 20) {
                 // Logo and branding
                 VStack(spacing: 16) {
-                    Image(systemName: "perspective")
+                    Image(systemName: "eye.circle.fill")
                         .font(.system(size: 60))
                         .foregroundStyle(
                             LinearGradient(

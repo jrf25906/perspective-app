@@ -20,8 +20,11 @@
     <string>APPL</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+    </dict>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
@@ -40,8 +43,8 @@
         <dict>
             <key>CFBundleURLSchemes</key>
             <array>
-                <!-- Replace with your REVERSED_CLIENT_ID from GoogleService-Info.plist -->
-                <string>com.googleusercontent.apps.YOUR_REVERSED_CLIENT_ID</string>
+                <!-- Google Sign-In Reversed Client ID -->
+                <string>com.googleusercontent.apps.774225353382-ka6gfqb7u7c42et6ci3oa4p21r60fk4c</string>
             </array>
         </dict>
     </array>
@@ -50,5 +53,23 @@
         <string>googlechrome</string>
         <string>googlechrome-x-callback</string>
     </array>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+            <key>127.0.0.1</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
 </dict>
 </plist> 

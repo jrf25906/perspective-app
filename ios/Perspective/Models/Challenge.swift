@@ -30,112 +30,144 @@ enum ChallengeType: String, Codable, CaseIterable {
         case .ethicalDilemma: return "scalemass"
         }
     }
+    
+    var description: String {
+        switch self {
+        case .biasSwap:
+            return "Challenge your assumptions by exploring opposing viewpoints"
+        case .logicPuzzle:
+            return "Test your logical reasoning skills"
+        case .dataLiteracy:
+            return "Analyze data and statistics critically"
+        case .counterArgument:
+            return "Develop arguments against your initial position"
+        case .synthesis:
+            return "Combine different perspectives into a cohesive understanding"
+        case .ethicalDilemma:
+            return "Navigate complex moral scenarios"
+        }
+    }
 }
 
-// MARK: - Difficulty Level
-enum DifficultyLevel: String, Codable, CaseIterable {
-    case beginner = "beginner"
-    case intermediate = "intermediate"
-    case advanced = "advanced"
+// MARK: - Challenge Difficulty
+enum ChallengeDifficulty: Int, Codable, CaseIterable {
+    case beginner = 1
+    case intermediate = 2
+    case advanced = 3
+    case expert = 4
     
     var displayName: String {
         switch self {
         case .beginner: return "Beginner"
         case .intermediate: return "Intermediate"
         case .advanced: return "Advanced"
+        case .expert: return "Expert"
         }
     }
     
-    var level: Int {
+    var color: String {
         switch self {
-        case .beginner: return 1
-        case .intermediate: return 3
-        case .advanced: return 5
+        case .beginner: return "green"
+        case .intermediate: return "yellow"
+        case .advanced: return "orange"
+        case .expert: return "red"
         }
     }
 }
 
-// MARK: - Challenge Model
+// MARK: - Challenge
 struct Challenge: Codable, Identifiable {
     let id: Int
     let type: ChallengeType
-    let difficulty: DifficultyLevel
     let title: String
-    let description: String
-    let instructions: String
+    let prompt: String
     let content: ChallengeContent
-    let skillsTested: [String]
-    let estimatedTimeMinutes: Int
-    let xpReward: Int
+    let options: [ChallengeOption]?
+    let correctAnswer: String?
+    let explanation: String
+    let difficultyLevel: Int
+    let requiredArticles: [String]?
     let isActive: Bool
     let createdAt: Date
     let updatedAt: Date
+    let estimatedTimeMinutes: Int
+    
+    var difficulty: ChallengeDifficulty {
+        return ChallengeDifficulty(rawValue: difficultyLevel) ?? .beginner
+    }
     
     private enum CodingKeys: String, CodingKey {
-        case id, type, difficulty, title, description, instructions, content
-        case skillsTested = "skills_tested"
-        case estimatedTimeMinutes = "estimated_time_minutes"
-        case xpReward = "xp_reward"
+        case id, type, title, prompt, content, options, explanation
+        case correctAnswer = "correct_answer"
+        case difficultyLevel = "difficulty_level"
+        case requiredArticles = "required_articles"
         case isActive = "is_active"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case estimatedTimeMinutes = "estimated_time_minutes"
     }
 }
 
 // MARK: - Challenge Content
 struct ChallengeContent: Codable {
-    // For bias swap challenges
-    let articles: [BiasArticle]?
-    
-    // For logic puzzles and multiple choice
+    let text: String?
+    let articles: [NewsReference]?
+    let visualization: DataVisualization?
+    let questions: [String]?
+    let additionalContext: AnyCodable?
     let question: String?
     let options: [ChallengeOption]?
-    
-    // For data literacy
-    let data: DataVisualization?
-    
-    // For counter-argument and synthesis
     let prompt: String?
     let referenceMaterial: [String]?
-    
-    // For ethical dilemmas
     let scenario: String?
     let stakeholders: [String]?
     let considerations: [String]?
     
-    // Additional fields
-    let dataVisualization: String?
-    let additionalContext: AnyCodable?
-    
     private enum CodingKeys: String, CodingKey {
-        case articles, question, options, data, prompt, scenario, stakeholders, considerations
-        case referenceMaterial = "reference_material"
-        case dataVisualization = "data_visualization"
+        case text, articles, visualization, questions
         case additionalContext = "additional_context"
+        case question, options, prompt
+        case referenceMaterial = "reference_material"
+        case scenario, stakeholders, considerations
     }
 }
 
-// MARK: - Supporting Types
-struct BiasArticle: Codable, Identifiable {
-    let id: String
+// MARK: - News Reference
+struct NewsReference: Codable, Identifiable {
     let title: String
-    let content: String
     let source: String
+    let url: String
+    let summary: String
+    let biasRating: Double
+    let publishedAt: Date
     let biasIndicators: [String]?
     
+    var id: String { url }
+    
     private enum CodingKeys: String, CodingKey {
-        case id, title, content, source
+        case title, source, url, summary
+        case biasRating = "bias_rating"
+        case publishedAt = "published_at"
         case biasIndicators = "bias_indicators"
     }
 }
 
+// MARK: - Challenge Option
 struct ChallengeOption: Codable, Identifiable {
     let id: String
     let text: String
+    let isCorrect: Bool
+    let explanation: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, text, explanation
+        case isCorrect = "is_correct"
+    }
 }
 
+// MARK: - Data Visualization
 struct DataVisualization: Codable {
-    let chartType: String?
+    let chartType: String
     let dataPoints: [AnyCodable]?
     let misleadingElements: [String]?
     
@@ -157,6 +189,18 @@ struct ChallengeSubmission: Codable {
     }
 }
 
+// MARK: - Streak Info
+struct StreakInfo: Codable {
+    let current: Int
+    let longest: Int
+    let isActive: Bool
+    
+    private enum CodingKeys: String, CodingKey {
+        case current, longest
+        case isActive = "is_active"
+    }
+}
+
 // MARK: - Challenge Result
 struct ChallengeResult: Codable {
     let isCorrect: Bool
@@ -167,49 +211,44 @@ struct ChallengeResult: Codable {
     private enum CodingKeys: String, CodingKey {
         case isCorrect
         case feedback
-        case xpEarned
-        case streakInfo
+        case xpEarned = "xp_earned"
+        case streakInfo = "streak_info"
     }
-}
-
-struct StreakInfo: Codable {
-    let currentStreak: Int
-    let streakMaintained: Bool
-    let isNewRecord: Bool
 }
 
 // MARK: - Challenge Stats
 struct ChallengeStats: Codable {
-    let userId: Int
     let totalCompleted: Int
-    let totalCorrect: Int
     let currentStreak: Int
     let longestStreak: Int
-    let lastChallengeDate: Date?
-    let difficultyPerformance: [String: PerformanceMetrics]
-    let typePerformance: [String: PerformanceMetrics]
+    let averageAccuracy: Double
+    let totalXpEarned: Int
+    let challengesByType: [String: Int]
+    let recentActivity: [ChallengeActivity]
     
     private enum CodingKeys: String, CodingKey {
-        case userId = "user_id"
         case totalCompleted = "total_completed"
-        case totalCorrect = "total_correct"
         case currentStreak = "current_streak"
         case longestStreak = "longest_streak"
-        case lastChallengeDate = "last_challenge_date"
-        case difficultyPerformance = "difficulty_performance"
-        case typePerformance = "type_performance"
+        case averageAccuracy = "average_accuracy"
+        case totalXpEarned = "total_xp_earned"
+        case challengesByType = "challenges_by_type"
+        case recentActivity = "recent_activity"
     }
 }
 
-struct PerformanceMetrics: Codable {
-    let completed: Int
-    let correct: Int
-    let averageTimeSeconds: Int
+// MARK: - Challenge Activity
+struct ChallengeActivity: Codable {
+    let challengeId: Int
+    let type: ChallengeType
+    let isCorrect: Bool
+    let completedAt: Date
     
     private enum CodingKeys: String, CodingKey {
-        case completed
-        case correct
-        case averageTimeSeconds = "average_time_seconds"
+        case challengeId = "challenge_id"
+        case type
+        case isCorrect = "is_correct"
+        case completedAt = "completed_at"
     }
 }
 
@@ -231,11 +270,9 @@ struct AnyCodable: Codable {
             value = double
         } else if let string = try? container.decode(String.self) {
             value = string
-        } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
-        } else if let dictionary = try? container.decode([String: AnyCodable].self) {
-            value = dictionary.mapValues { $0.value }
         } else {
+            // For arrays and dictionaries, just store as nil for now
+            // to avoid recursive type inference issues
             value = NSNull()
         }
     }
@@ -251,10 +288,6 @@ struct AnyCodable: Codable {
             try container.encode(double)
         case let string as String:
             try container.encode(string)
-        case let array as [Any]:
-            try container.encode(array.map { AnyCodable($0) })
-        case let dictionary as [String: Any]:
-            try container.encode(dictionary.mapValues { AnyCodable($0) })
         default:
             try container.encodeNil()
         }
@@ -283,4 +316,4 @@ struct LeaderboardEntry: Codable, Identifiable {
         case totalXp = "total_xp"
         case correctAnswers = "correct_answers"
     }
-} 
+}

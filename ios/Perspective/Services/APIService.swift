@@ -4,7 +4,7 @@ import Combine
 class APIService: ObservableObject {
     static let shared = APIService()
     
-    private let baseURL = "http://localhost:3000/api"
+    private let baseURL = "http://127.0.0.1:3000/api"
     private let session = URLSession.shared
     private var cancellables = Set<AnyCancellable>()
     
@@ -57,6 +57,21 @@ class APIService: ObservableObject {
         .eraseToAnyPublisher()
     }
     
+    func googleSignIn(idToken: String) -> AnyPublisher<AuthResponse, APIError> {
+        let request = GoogleSignInRequest(idToken: idToken)
+        
+        return makeRequest(
+            endpoint: "/auth/google",
+            method: "POST",
+            body: request,
+            responseType: AuthResponse.self
+        )
+        .handleEvents(receiveOutput: { [weak self] response in
+            self?.handleAuthSuccess(response)
+        })
+        .eraseToAnyPublisher()
+    }
+    
     func logout() {
         UserDefaults.standard.removeObject(forKey: "auth_token")
         DispatchQueue.main.async {
@@ -69,6 +84,7 @@ class APIService: ObservableObject {
         makeAuthenticatedRequest(
             endpoint: "/auth/profile",
             method: "GET",
+            body: Optional<String>.none,
             responseType: User.self
         )
         .sink(
@@ -96,14 +112,15 @@ class APIService: ObservableObject {
         return makeAuthenticatedRequest(
             endpoint: "/challenge/today",
             method: "GET",
+            body: Optional<String>.none,
             responseType: Challenge.self
         )
     }
     
-    func submitChallenge(challengeId: Int, answer: Any, timeSpentSeconds: Int) -> AnyPublisher<ChallengeResult, APIError> {
+    func submitChallenge(challengeId: Int, userAnswer: Any, timeSpent: Int) -> AnyPublisher<ChallengeResult, APIError> {
         let submission = ChallengeSubmission(
-            answer: AnyCodable(answer),
-            timeSpentSeconds: timeSpentSeconds
+            answer: AnyCodable(userAnswer),
+            timeSpentSeconds: timeSpent
         )
         
         return makeAuthenticatedRequest(
@@ -118,6 +135,7 @@ class APIService: ObservableObject {
         return makeAuthenticatedRequest(
             endpoint: "/challenge/stats",
             method: "GET",
+            body: Optional<String>.none,
             responseType: ChallengeStats.self
         )
     }
@@ -126,6 +144,7 @@ class APIService: ObservableObject {
         return makeAuthenticatedRequest(
             endpoint: "/challenge/leaderboard?timeframe=\(timeframe)",
             method: "GET",
+            body: Optional<String>.none,
             responseType: [LeaderboardEntry].self
         )
     }
@@ -136,6 +155,7 @@ class APIService: ObservableObject {
         return makeAuthenticatedRequest(
             endpoint: "/profile/echo-score",
             method: "GET",
+            body: Optional<String>.none,
             responseType: EchoScore.self
         )
     }
@@ -144,6 +164,7 @@ class APIService: ObservableObject {
         return makeAuthenticatedRequest(
             endpoint: "/profile/echo-score/history?days=\(days)",
             method: "GET",
+            body: Optional<String>.none,
             responseType: [EchoScoreHistory].self
         )
     }
@@ -175,18 +196,35 @@ class APIService: ObservableObject {
         
         if let body = body {
             do {
-                request.httpBody = try JSONEncoder().encode(body)
+                let encoder = JSONEncoder()
+                request.httpBody = try encoder.encode(body)
+                // Log the request body for debugging
+                if let requestString = String(data: request.httpBody!, encoding: .utf8) {
+                    print("Request Body: \(requestString)")
+                }
             } catch {
+                print("Encoding Error: \(error)")
                 return Fail(error: APIError.encodingError)
                     .eraseToAnyPublisher()
             }
         }
         
         return session.dataTaskPublisher(for: request)
-            .map(\.data)
+            .tryMap { data, response in
+                // Log the raw response for debugging
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("HTTP Status: \(httpResponse.statusCode)")
+                    print("Response Headers: \(httpResponse.allHeaderFields)")
+                }
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Raw Response: \(responseString)")
+                }
+                return data
+            }
             .decode(type: responseType, decoder: JSONDecoder.apiDecoder)
             .mapError { error in
-                if error is DecodingError {
+                if let decodingError = error as? DecodingError {
+                    print("Decoding Error Details: \(decodingError)")
                     return APIError.decodingError
                 } else {
                     return APIError.networkError(error)
@@ -218,18 +256,35 @@ class APIService: ObservableObject {
         
         if let body = body {
             do {
-                request.httpBody = try JSONEncoder().encode(body)
+                let encoder = JSONEncoder()
+                request.httpBody = try encoder.encode(body)
+                // Log the request body for debugging
+                if let requestString = String(data: request.httpBody!, encoding: .utf8) {
+                    print("Request Body: \(requestString)")
+                }
             } catch {
+                print("Encoding Error: \(error)")
                 return Fail(error: APIError.encodingError)
                     .eraseToAnyPublisher()
             }
         }
         
         return session.dataTaskPublisher(for: request)
-            .map(\.data)
+            .tryMap { data, response in
+                // Log the raw response for debugging
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("HTTP Status: \(httpResponse.statusCode)")
+                    print("Response Headers: \(httpResponse.allHeaderFields)")
+                }
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Raw Response: \(responseString)")
+                }
+                return data
+            }
             .decode(type: responseType, decoder: JSONDecoder.apiDecoder)
             .mapError { error in
-                if error is DecodingError {
+                if let decodingError = error as? DecodingError {
+                    print("Decoding Error Details: \(decodingError)")
                     return APIError.decodingError
                 } else {
                     return APIError.networkError(error)

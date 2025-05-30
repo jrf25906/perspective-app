@@ -29,7 +29,7 @@ struct ChallengeCompletedView: View {
             .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
             
             // Explanation
-            if let explanation = result?.explanation {
+            if let explanation = result?.feedback {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Explanation")
                         .font(.headline)
@@ -44,22 +44,22 @@ struct ChallengeCompletedView: View {
                 .cornerRadius(16)
             }
             
-            // Echo Score change
-            if let scoreChange = result?.echoScoreChange, scoreChange != 0 {
+            // XP Earned
+            if let result = result, result.xpEarned > 0 {
                 HStack {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .foregroundColor(.blue)
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.orange)
                     
-                    Text("Echo Score")
+                    Text("XP Earned")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("\(scoreChange > 0 ? "+" : "")\(String(format: "%.1f", scoreChange))")
+                    Text("+\(result.xpEarned)")
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundColor(scoreChange > 0 ? .green : .red)
+                        .foregroundColor(.orange)
                 }
                 .padding()
                 .background(Color(.systemBackground))

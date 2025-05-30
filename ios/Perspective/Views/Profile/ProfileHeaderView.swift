@@ -45,11 +45,9 @@ struct ProfileHeaderView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
-                        if let email = user.email {
-                            Text(email)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        Text(user.email)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     } else {
                         Text("Loading...")
                             .font(.title2)

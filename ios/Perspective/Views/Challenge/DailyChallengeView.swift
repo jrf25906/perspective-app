@@ -118,8 +118,8 @@ class DailyChallengeViewModel: ObservableObject {
         
         apiService.submitChallenge(
             challengeId: challenge.id,
-            answer: answer,
-            timeSpentSeconds: timeSpentSeconds
+            userAnswer: answer,
+            timeSpent: timeSpentSeconds
         )
         .receive(on: DispatchQueue.main)
         .sink(

@@ -6,6 +6,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   avatar_url?: string;
+  google_id?: string;
   is_active: boolean;
   email_verified: boolean;
   echo_score: number;

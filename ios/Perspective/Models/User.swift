@@ -73,3 +73,11 @@ struct RegisterRequest: Codable {
         case lastName = "last_name"
     }
 }
+
+struct GoogleSignInRequest: Codable {
+    let idToken: String
+    
+    enum CodingKeys: String, CodingKey {
+        case idToken = "idToken"
+    }
+}

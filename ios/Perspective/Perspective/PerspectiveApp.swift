@@ -11,12 +11,15 @@ import GoogleSignIn
 @main
 struct PerspectiveApp: App {
     let persistenceController = PersistenceController.shared
-    
-    // Initialize the required services
-    @StateObject private var apiService = APIService.shared
-    @StateObject private var appStateManager = AppStateManager.shared
-    @StateObject private var networkMonitor = NetworkMonitor.shared
+    let apiService = APIService.shared
+    let appStateManager = AppStateManager.shared
+    let networkMonitor = NetworkMonitor.shared
     @StateObject private var offlineDataManager = OfflineDataManager()
+
+    init() {
+        // Configure Google Sign-In
+        configureGoogleSignIn()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -29,6 +32,18 @@ struct PerspectiveApp: App {
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
+        }
+    }
+    
+    private func configureGoogleSignIn() {
+        // Load Google configuration from GoogleService-Info.plist
+        if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+           let plist = NSDictionary(contentsOfFile: path),
+           let clientId = plist["CLIENT_ID"] as? String {
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+            print("Google Sign-In configured with Client ID: \(clientId)")
+        } else {
+            print("Warning: GoogleService-Info.plist not found or CLIENT_ID missing")
         }
     }
 }

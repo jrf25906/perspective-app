@@ -21,11 +21,11 @@ struct ChallengeContentView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     
-                    Text(challenge.description)
+                    Text(challenge.prompt)
                         .font(.body)
                         .lineSpacing(4)
                     
-                    Text(challenge.instructions)
+                    Text("Complete this challenge to improve your critical thinking skills")
                         .font(.callout)
                         .foregroundColor(.secondary)
                         .padding()
@@ -152,7 +152,7 @@ struct ChallengeHeaderView: View {
             HStack(spacing: 2) {
                 ForEach(1...5, id: \.self) { level in
                     Circle()
-                        .fill(level <= challenge.difficulty.level ? Color.orange : Color.gray.opacity(0.3))
+                        .fill(level <= challenge.difficultyLevel ? Color.orange : Color.gray.opacity(0.3))
                         .frame(width: 8, height: 8)
                 }
             }
@@ -169,7 +169,7 @@ struct ChallengeHeaderView: View {
 }
 
 struct BiasSwapContentView: View {
-    let articles: [BiasArticle]
+    let articles: [NewsReference]
     @Binding var selectedIndicators: Set<String>
     
     var body: some View {
@@ -188,7 +188,7 @@ struct BiasSwapContentView: View {
 }
 
 struct BiasArticleView: View {
-    let article: BiasArticle
+    let article: NewsReference
     @Binding var selectedIndicators: Set<String>
     @State private var isExpanded = false
     
@@ -218,7 +218,7 @@ struct BiasArticleView: View {
             }
             
             if isExpanded {
-                Text(article.content)
+                Text(article.summary)
                     .font(.body)
                     .lineSpacing(4)
                 
