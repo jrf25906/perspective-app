@@ -235,11 +235,11 @@ class NewsIntegrationService {
   async aggregateArticles(topics: string[]): Promise<Partial<IContent>[]> {
     const allArticles: Partial<IContent>[] = [];
 
-    // Fetch from AllSides
-    for (const topic of topics) {
-      const articles = await this.fetchFromAllSides(topic);
-      allArticles.push(...articles);
-    }
+    // Fetch from AllSides in parallel
+    const allSidesResults = await Promise.all(
+      topics.map(t => this.fetchFromAllSides(t))
+    );
+    allSidesResults.forEach(res => allArticles.push(...res));
 
     // Fetch from News API if configured
     if (this.newsApiKey) {
