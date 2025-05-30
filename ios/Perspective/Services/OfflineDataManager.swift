@@ -8,6 +8,9 @@ class OfflineDataManager: ObservableObject {
     
     @Published var isOnline = true
     @Published var pendingSyncCount = 0
+    @Published var cachedChallengeCount = 0
+    @Published var cachedArticleCount = 0
+    @Published var cachedEchoScoreCount = 0
     
     // MARK: - UserDefaults Keys
     private enum UserDefaultsKeys {
@@ -53,6 +56,7 @@ class OfflineDataManager: ObservableObject {
     init() {
         setupNetworkMonitoring()
         updatePendingSyncCount()
+        updateCacheCounts()
     }
     
     // MARK: - Network Monitoring
@@ -183,11 +187,13 @@ class OfflineDataManager: ObservableObject {
         
         saveChallenges(challenges)
         print("Challenge cached: \(challenge.id)")
+        updateCacheCounts()
     }
     
     func cacheChallenges(_ challenges: [Challenge]) {
         saveChallenges(challenges)
         print("Challenges cached: \(challenges.count)")
+        updateCacheCounts()
     }
     
     private func saveChallenges(_ challenges: [Challenge]) {
@@ -210,6 +216,7 @@ class OfflineDataManager: ObservableObject {
             let data = try encoder.encode(articles)
             UserDefaults.standard.set(data, forKey: UserDefaultsKeys.cachedNewsArticles)
             print("Articles cached: \(articles.count)")
+            updateCacheCounts()
         } catch {
             print("Failed to cache news articles: \(error)")
         }
@@ -258,6 +265,7 @@ class OfflineDataManager: ObservableObject {
             let data = try encoder.encode(history)
             UserDefaults.standard.set(data, forKey: UserDefaultsKeys.cachedEchoScoreHistory)
             print("Echo score history cached: \(history.count)")
+            updateCacheCounts()
         } catch {
             print("Failed to cache echo score history: \(error)")
         }
@@ -296,7 +304,15 @@ class OfflineDataManager: ObservableObject {
         
         return history
     }
-    
+
+    // MARK: - Cache Metrics
+
+    private func updateCacheCounts() {
+        cachedChallengeCount = getCachedChallenges().count
+        cachedArticleCount = getCachedNewsArticles().count
+        cachedEchoScoreCount = getCachedEchoScoreHistory().count
+    }
+
     // MARK: - Sync Management
     
     private func updatePendingSyncCount() {
@@ -356,6 +372,7 @@ class OfflineDataManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cachedNewsArticles)
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cachedEchoScoreHistory)
         print("All cache cleared")
+        updateCacheCounts()
     }
     
     func getCacheSize() -> Int {

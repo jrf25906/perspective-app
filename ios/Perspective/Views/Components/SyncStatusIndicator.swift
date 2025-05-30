@@ -1,63 +1,9 @@
 import SwiftUI
-import Combine
-
-// MARK: - Mock Data Structures (until services are properly linked)
-
-class MockOfflineManager: ObservableObject {
-    @Published var pendingSyncCount = 0
-    @Published var isOnline = true
-    
-    static let shared = MockOfflineManager()
-    
-    func getLastSyncDate() -> Date? {
-        return Date().addingTimeInterval(-3600) // 1 hour ago
-    }
-    
-    func getCacheSize() -> Int {
-        return 1024 * 256 // 256 KB
-    }
-    
-    func getCachedChallenges() -> [MockChallenge] {
-        return Array(repeating: MockChallenge(), count: 5)
-    }
-    
-    func getCachedNewsArticles() -> [MockArticle] {
-        return Array(repeating: MockArticle(), count: 10)
-    }
-    
-    func getCachedEchoScoreHistory() -> [MockEchoScore] {
-        return Array(repeating: MockEchoScore(), count: 3)
-    }
-}
-
-class MockNetworkMonitor: ObservableObject {
-    @Published var isConnected = true
-    @Published var connectionType: ConnectionType = .wifi
-    
-    static let shared = MockNetworkMonitor()
-    
-    enum ConnectionType {
-        case wifi, cellular, ethernet, unknown
-    }
-}
-
-struct MockChallenge {
-    let id = 1
-}
-
-struct MockArticle {
-    let id = 1
-}
-
-struct MockEchoScore {
-    let id = 1
-}
-
 // MARK: - Sync Status Indicator Components
 
 struct SyncStatusIndicator: View {
-    @StateObject private var offlineManager = MockOfflineManager.shared
-    @StateObject private var networkMonitor = MockNetworkMonitor.shared
+    @EnvironmentObject private var offlineManager: OfflineDataManager
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
     @State private var showingDetails = false
     @State private var lastSyncText = "Never"
     
@@ -172,8 +118,8 @@ struct SyncStatusIndicator: View {
 // MARK: - Compact Sync Status Indicator
 
 struct CompactSyncStatusIndicator: View {
-    @StateObject private var offlineManager = MockOfflineManager.shared
-    @StateObject private var networkMonitor = MockNetworkMonitor.shared
+    @EnvironmentObject private var offlineManager: OfflineDataManager
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
     
     var body: some View {
         HStack(spacing: 4) {
@@ -205,8 +151,8 @@ struct CompactSyncStatusIndicator: View {
 // MARK: - Banner Sync Status Indicator
 
 struct BannerSyncStatusIndicator: View {
-    @StateObject private var offlineManager = MockOfflineManager.shared
-    @StateObject private var networkMonitor = MockNetworkMonitor.shared
+    @EnvironmentObject private var offlineManager: OfflineDataManager
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
     @State private var isVisible = true
     
     var body: some View {
@@ -300,8 +246,8 @@ struct BannerSyncStatusIndicator: View {
 
 struct SyncStatusDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var offlineManager = MockOfflineManager.shared
-    @StateObject private var networkMonitor = MockNetworkMonitor.shared
+    @EnvironmentObject private var offlineManager: OfflineDataManager
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
     @State private var cacheInfo: CacheInfo = CacheInfo()
     
     struct CacheInfo {
@@ -565,9 +511,9 @@ struct SyncStatusDetailView: View {
     }
     
     private func updateCacheInfo() {
-        cacheInfo.challengeCount = offlineManager.getCachedChallenges().count
-        cacheInfo.articleCount = offlineManager.getCachedNewsArticles().count
-        cacheInfo.echoScoreCount = offlineManager.getCachedEchoScoreHistory().count
+        cacheInfo.challengeCount = offlineManager.cachedChallengeCount
+        cacheInfo.articleCount = offlineManager.cachedArticleCount
+        cacheInfo.echoScoreCount = offlineManager.cachedEchoScoreCount
         
         let sizeInBytes = offlineManager.getCacheSize()
         let formatter = ByteCountFormatter()
@@ -583,9 +529,15 @@ struct SyncStatusIndicator_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
             SyncStatusIndicator()
+                .environmentObject(OfflineDataManager())
+                .environmentObject(NetworkMonitor.shared)
             CompactSyncStatusIndicator()
+                .environmentObject(OfflineDataManager())
+                .environmentObject(NetworkMonitor.shared)
             BannerSyncStatusIndicator()
+                .environmentObject(OfflineDataManager())
+                .environmentObject(NetworkMonitor.shared)
         }
         .padding()
     }
-} 
+}
