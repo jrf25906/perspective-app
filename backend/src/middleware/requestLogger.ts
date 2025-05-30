@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 
 const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
-  const requestId = Math.random().toString(36).substring(2, 15);
+  const requestId = randomUUID();
   (req as any).headers['x-request-id'] = requestId;
   res.setHeader('X-Request-ID', requestId);
 
