@@ -32,7 +32,7 @@ Multi-platform training application designed to help users escape echo chambers 
 - **Database ORM**: Knex.js for migrations and queries
 - **Authentication**: JWT tokens with Google OAuth
 - **Security**: Helmet.js, CORS, rate limiting
-- **Environment**: Node.js ≥18.0.0, npm ≥8.0.0
+- **Environment**: Node.js ≥20.0.0, npm ≥8.0.0
 
 ## Mobile App Dependencies
 ### iOS (CocoaPods)

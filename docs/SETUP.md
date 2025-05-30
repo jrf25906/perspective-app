@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 20+
 - npm or yarn
 - Docker (for backend development)
 - Android Studio (for Android development)

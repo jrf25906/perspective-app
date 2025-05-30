@@ -4,7 +4,7 @@ This guide will help you set up the Perspective app development environment.
 
 ## Prerequisites
 
-- Node.js (v18.0.0 or higher)
+- Node.js (v20.0.0 or higher)
 - npm (v8.0.0 or higher)
 - PostgreSQL (v15 or higher)
 - Redis (optional, for caching)
