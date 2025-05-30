@@ -9,6 +9,7 @@ import {
 import { User, BiasProfile } from '../models/User';
 import { BiasRating } from '../models/Content';
 import { addDays, differenceInDays, startOfDay } from 'date-fns';
+import { processInBatches } from '../utils/concurrentProcessing';
 
 interface AdaptiveChallengeConfig {
   // Difficulty adjustment thresholds
@@ -563,17 +564,60 @@ export class AdaptiveChallengeService {
     userId: number,
     count: number = 3
   ): Promise<Challenge[]> {
-    const recommendations: Challenge[] = [];
+    // Generate more recommendations than needed to account for duplicates
+    const oversampleFactor = 1.5;
+    const recommendationsToGenerate = Math.ceil(count * oversampleFactor);
     
-    // Get multiple challenges using the adaptive algorithm
-    for (let i = 0; i < count; i++) {
-      const challenge = await this.getNextChallengeForUser(userId);
-      if (challenge && !recommendations.find(c => c.id === challenge.id)) {
-        recommendations.push(challenge);
+    // Generate recommendations concurrently
+    const challengePromises = Array.from(
+      { length: recommendationsToGenerate }, 
+      () => this.getNextChallengeForUser(userId)
+    );
+    
+    const challenges = await Promise.all(challengePromises);
+    
+    // Filter out nulls and deduplicate by challenge ID
+    const uniqueChallenges = new Map<number, Challenge>();
+    
+    for (const challenge of challenges) {
+      if (challenge && !uniqueChallenges.has(challenge.id)) {
+        uniqueChallenges.set(challenge.id, challenge);
+        
+        // Stop once we have enough unique challenges
+        if (uniqueChallenges.size >= count) {
+          break;
+        }
       }
     }
-
-    return recommendations;
+    
+    // If we still don't have enough unique challenges, try a different approach
+    if (uniqueChallenges.size < count) {
+      // Get all available challenges and score them in bulk
+      const availableChallenges = await this.getAvailableChallenges(userId);
+      const user = await this.getUserWithBiasProfile(userId);
+      
+      if (user && availableChallenges.length > 0) {
+        const performanceProfile = await this.buildUserPerformanceProfile(userId);
+        const scoredChallenges = await this.scoreChallenges(
+          availableChallenges,
+          user,
+          performanceProfile
+        );
+        
+        // Add top-scored challenges that aren't already in our set
+        for (const scoredChallenge of scoredChallenges) {
+          if (!uniqueChallenges.has(scoredChallenge.challenge.id)) {
+            uniqueChallenges.set(scoredChallenge.challenge.id, scoredChallenge.challenge);
+            
+            if (uniqueChallenges.size >= count) {
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    return Array.from(uniqueChallenges.values()).slice(0, count);
   }
 
   /**

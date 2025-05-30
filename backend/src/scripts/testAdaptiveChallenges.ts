@@ -47,7 +47,7 @@ async function testAdaptiveSystem() {
       console.log(`   - Ready for Advanced: ${progress.readyForAdvanced ? 'Yes' : 'No'}`);
       console.log(`   - Strengths: ${progress.strengths.join(', ') || 'None identified yet'}`);
       console.log(`   - Weaknesses: ${progress.weaknesses.join(', ') || 'None identified yet'}`);
-      console.log(`   - Suggested Focus: ${progress.suggestedFocus.join(', ') || 'Continue exploring'}`);
+      console.log(`   - Recommended Focus: ${progress.recommendedFocus.join(', ') || 'Continue exploring'}`);
     }
 
     // Show selection reasoning

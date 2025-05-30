@@ -1,9 +1,17 @@
-import { IEchoScoreService } from './echoScoreService';
-import { getService } from '../di/serviceRegistration';
-import { EchoScoreServiceToken } from '../controllers/echoScoreController';
+import { IEchoScoreService, createEchoScoreService } from './echoScoreService';
 import db from '../db';
+import { processWithErrors, chunk } from '../utils/concurrentProcessing';
 
 export class EchoScoreScheduler {
+  private static echoScoreService: IEchoScoreService;
+
+  private static getEchoScoreService(): IEchoScoreService {
+    if (!this.echoScoreService) {
+      this.echoScoreService = createEchoScoreService(db);
+    }
+    return this.echoScoreService;
+  }
+
   /**
    * Calculate Echo Score after user completes a challenge
    */
@@ -32,7 +40,7 @@ export class EchoScoreScheduler {
 
       if (todayResponses && Number(todayResponses.count) >= 3) {
         console.log(`Calculating Echo Score for user ${userId} after ${todayResponses.count} challenges`);
-        const echoScoreService = getService(EchoScoreServiceToken);
+        const echoScoreService = this.getEchoScoreService();
         await echoScoreService.calculateAndSaveEchoScore(userId);
       }
     } catch (error) {
@@ -65,7 +73,7 @@ export class EchoScoreScheduler {
 
         if (todayScores && Number(todayScores.count) === 0) {
           console.log(`Calculating Echo Score for user ${userId} after reading from ${todaySources.length} sources`);
-          const echoScoreService = getService(EchoScoreServiceToken);
+          const echoScoreService = this.getEchoScoreService();
           await echoScoreService.calculateAndSaveEchoScore(userId);
         }
       }
@@ -98,20 +106,30 @@ export class EchoScoreScheduler {
 
       console.log(`Found ${activeUsers.length} active users without Echo Score for ${yesterdayStr}`);
 
-      // Calculate scores for each active user
-      const echoScoreService = getService(EchoScoreServiceToken);
-      for (const user of activeUsers) {
-        try {
+      // Calculate scores concurrently with error handling
+      const echoScoreService = this.getEchoScoreService();
+      
+      const results = await processWithErrors(
+        activeUsers,
+        async (user) => {
           await echoScoreService.calculateAndSaveEchoScore(user.user_id);
           console.log(`Calculated Echo Score for user ${user.user_id}`);
-        } catch (error) {
-          console.error(`Failed to calculate Echo Score for user ${user.user_id}:`, error);
+          return user.user_id;
+        },
+        {
+          concurrencyLimit: 10, // Process 10 users concurrently to avoid DB overload
+          continueOnError: true,
+          onError: (error, user) => {
+            console.error(`Failed to calculate Echo Score for user ${user.user_id}:`, error.message);
+          }
         }
-      }
+      );
 
       return {
-        processed: activeUsers.length,
-        date: yesterdayStr
+        processed: results.successful.length,
+        failed: results.failed.length,
+        date: yesterdayStr,
+        failedUsers: results.failed.map(f => f.item.user_id)
       };
     } catch (error) {
       console.error('Error in daily Echo Score calculation:', error);

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Content, { BiasRating, ContentType, IContent, INewsSource } from '../models/Content';
 import config from '../config';
+import { processWithErrors, retryWithBackoff } from '../utils/concurrentProcessing';
 
 interface NewsApiArticle {
   title: string;
@@ -235,16 +236,37 @@ class NewsIntegrationService {
   async aggregateArticles(topics: string[]): Promise<Partial<IContent>[]> {
     const allArticles: Partial<IContent>[] = [];
 
-    // Fetch from AllSides
-    for (const topic of topics) {
-      const articles = await this.fetchFromAllSides(topic);
-      allArticles.push(...articles);
+    // Fetch from AllSides in parallel for all topics
+    const allSidesResults = await processWithErrors(
+      topics,
+      async (topic) => retryWithBackoff(
+        () => this.fetchFromAllSides(topic),
+        { 
+          maxRetries: 2,
+          retryCondition: (error) => !error.message.includes('API key')
+        }
+      ),
+      {
+        concurrencyLimit: 5, // Limit concurrent API calls to respect rate limits
+        continueOnError: true,
+        onError: (error, topic) => {
+          console.error(`Failed to fetch AllSides articles for topic "${topic}":`, error.message);
+        }
+      }
+    );
+
+    // Aggregate successful AllSides results
+    for (const { result } of allSidesResults.successful) {
+      allArticles.push(...result);
     }
 
-    // Fetch from News API if configured
-    if (this.newsApiKey) {
+    // Fetch from News API if configured (single call with combined query)
+    if (this.newsApiKey && topics.length > 0) {
       try {
-        const newsApiArticles = await this.fetchFromNewsAPI(topics.join(' OR '));
+        const newsApiArticles = await retryWithBackoff(
+          () => this.fetchFromNewsAPI(topics.join(' OR ')),
+          { maxRetries: 2 }
+        );
         allArticles.push(...newsApiArticles);
       } catch (error) {
         console.error('Failed to fetch from News API:', error);

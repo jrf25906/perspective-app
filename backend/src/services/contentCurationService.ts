@@ -2,6 +2,8 @@ import Content, { BiasRating, ContentType, IContent, INewsSource } from '../mode
 import newsIntegrationService from './newsIntegrationService';
 import db from '../db';
 import { URL } from 'url';
+import { processWithErrors } from '../utils/concurrentProcessing';
+import { contentCache, cacheKeys } from './cacheService';
 
 interface ContentValidation {
   isValid: boolean;
@@ -240,36 +242,46 @@ class ContentCurationService {
     // Aggregate articles from all sources
     const articles = await newsIntegrationService.aggregateArticles(topics);
 
-    // Process each article
-    for (const article of articles) {
-      try {
+    // Check for duplicates in batch
+    const existingUrls = await db('content')
+      .whereIn('url', articles.map(a => a.url).filter(url => url))
+      .pluck('url');
+    
+    const existingUrlSet = new Set(existingUrls);
+
+    // Filter out duplicates before processing
+    const newArticles = articles.filter(article => 
+      article.url && !existingUrlSet.has(article.url)
+    );
+    
+    results.duplicates = articles.length - newArticles.length;
+
+    // Process new articles in parallel
+    const ingestionResults = await processWithErrors(
+      newArticles,
+      async (article) => {
         // Try to match source by URL domain
         const articleDomain = new URL(article.url!).hostname;
         const source = Array.from(sourceMap.values()).find(s => 
           articleDomain.includes(s.domain)
         );
 
-        // Check if article already exists
-        const exists = await db('content')
-          .where('url', article.url)
-          .first();
-
-        if (exists) {
-          results.duplicates++;
-          continue;
-        }
-
         const ingested = await this.ingestContent(article, source?.id);
-        if (ingested) {
-          results.ingested++;
-        } else {
-          results.failed++;
+        return ingested;
+      },
+      {
+        concurrencyLimit: 10, // Process 10 articles concurrently
+        continueOnError: true,
+        onError: (error, article) => {
+          console.error(`Failed to ingest article "${article.headline}":`, error.message);
         }
-      } catch (error) {
-        console.error('Failed to ingest article:', error);
-        results.failed++;
       }
-    }
+    );
+
+    // Count successful and failed ingestions
+    results.ingested = ingestionResults.successful.filter(r => r.result !== null).length;
+    results.failed = ingestionResults.failed.length + 
+                     ingestionResults.successful.filter(r => r.result === null).length;
 
     return results;
   }
@@ -290,6 +302,15 @@ class ContentCurationService {
       maxAge = 7,
       minArticles = 6,
     } = options;
+
+    // Try to get from cache first
+    const cacheKey = cacheKeys.contentByTopic(topic);
+    const cachedContent = contentCache.get<IContent[]>(cacheKey);
+    
+    if (cachedContent) {
+      console.log(`Returning cached content for topic: ${topic}`);
+      return cachedContent;
+    }
 
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - maxAge);
@@ -326,9 +347,14 @@ class ContentCurationService {
       curatedArticles.push(...articles.slice(0, targetPerBias));
     });
 
-    return curatedArticles.sort((a, b) => 
+    const result = curatedArticles.sort((a, b) => 
       b.published_at.getTime() - a.published_at.getTime()
     );
+
+    // Cache the result for 10 minutes
+    contentCache.set(cacheKey, result, 600000);
+
+    return result;
   }
 
   /**
