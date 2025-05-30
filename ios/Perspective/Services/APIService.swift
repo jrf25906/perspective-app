@@ -1,19 +1,29 @@
 import Foundation
 import Combine
+import KeychainAccess
 
 class APIService: ObservableObject {
     static let shared = APIService()
-    
-    private let baseURL = "http://127.0.0.1:3000/api"
+
+    private let baseURL: String
     private let session = URLSession.shared
     private var cancellables = Set<AnyCancellable>()
     
     @Published var isAuthenticated = false
     @Published var currentUser: User?
     
+    private let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "com.perspective.app")
+
     private init() {
+        // Read API base URL from Info.plist, fallback to example HTTPS endpoint
+        if let url = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String {
+            self.baseURL = url
+        } else {
+            self.baseURL = "https://example.com/api"
+        }
+
         // Check for stored token on init
-        if let token = UserDefaults.standard.string(forKey: "auth_token") {
+        if let token = try? keychain.get("auth_token"), token != nil {
             // Validate token by fetching profile
             fetchProfile()
         }
@@ -73,7 +83,11 @@ class APIService: ObservableObject {
     }
     
     func logout() {
-        UserDefaults.standard.removeObject(forKey: "auth_token")
+        do {
+            try keychain.remove("auth_token")
+        } catch {
+            print("Keychain remove error: \(error)")
+        }
         DispatchQueue.main.async {
             self.isAuthenticated = false
             self.currentUser = nil
@@ -172,7 +186,11 @@ class APIService: ObservableObject {
     // MARK: - Private Methods
     
     private func handleAuthSuccess(_ response: AuthResponse) {
-        UserDefaults.standard.set(response.token, forKey: "auth_token")
+        do {
+            try keychain.set(response.token, key: "auth_token")
+        } catch {
+            print("Keychain set error: \(error)")
+        }
         DispatchQueue.main.async {
             self.currentUser = response.user
             self.isAuthenticated = true
@@ -291,7 +309,7 @@ class APIService: ObservableObject {
         body: T? = nil,
         responseType: U.Type
     ) -> AnyPublisher<U, APIError> {
-        guard let token = UserDefaults.standard.string(forKey: "auth_token") else {
+        guard let token = try? keychain.get("auth_token"), let token = token else {
             return Fail(error: APIError.unauthorized)
                 .eraseToAnyPublisher()
         }

@@ -12,7 +12,8 @@ directory now contains the sole maintained iOS implementation.
 - SwiftUI for modern UI components
 - MVVM architecture
 - Alamofire for networking
-- Keychain for secure storage
+- KeychainAccess for secure token storage
+- Configurable API base URL via `Info.plist`
 
 ## Build Requirements
 
@@ -38,12 +39,14 @@ directory now contains the sole maintained iOS implementation.
    pod install
    ```
 
-4. Open the workspace in Xcode:
+4. Update `API_BASE_URL` in `Perspective/Info.plist` to point to your backend server.
+
+5. Open the workspace in Xcode:
    ```bash
    open Perspective.xcworkspace
    ```
 
-5. Build and run the project
+6. Build and run the project
 
 ## Project Structure
 

@@ -12,6 +12,8 @@
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
+    <key>API_BASE_URL</key>
+    <string>https://example.com/api</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleInfoDictionaryVersion</key>
