@@ -57,8 +57,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0C46180934114F628A421DFF /* Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Models;
 			sourceTree = "<group>";
 		};
@@ -72,36 +70,26 @@
 		};
 		50DF649E2DE61E7600A265DC /* perspectiveTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = perspectiveTests;
 			sourceTree = "<group>";
 		};
 		50DF64A82DE61E7600A265DC /* perspectiveUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = perspectiveUITests;
 			sourceTree = "<group>";
 		};
 		71E70F40D753460EB5653E18 /* Views */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Views;
 			sourceTree = "<group>";
 		};
 		BE79D5A922D945F295EE45AA /* Services */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Services;
 			sourceTree = "<group>";
 		};
 		D1A8D1E184444B59B0A5D17A /* Data */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Data;
 			sourceTree = "<group>";
 		};
@@ -336,9 +324,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-perspective-perspectiveUITests/Pods-perspective-perspectiveUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-perspective-perspectiveUITests/Pods-perspective-perspectiveUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -397,9 +389,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-perspective/Pods-perspective-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-perspective/Pods-perspective-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
