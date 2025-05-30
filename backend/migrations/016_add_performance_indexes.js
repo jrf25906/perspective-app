@@ -21,11 +21,11 @@ exports.up = function(knex) {
       table.index('challenge_id', 'idx_user_responses_challenge');
     }),
 
-    // Challenge submissions indexes
+    // Challenge submissions indexes - only index columns that exist
     knex.schema.table('challenge_submissions', function(table) {
       table.index(['user_id', 'created_at'], 'idx_challenge_submissions_user_created');
-      table.index(['user_id', 'difficulty'], 'idx_challenge_submissions_user_difficulty');
-      table.index(['user_id', 'type'], 'idx_challenge_submissions_user_type');
+      table.index('challenge_id', 'idx_challenge_submissions_challenge');
+      table.index(['user_id', 'is_correct'], 'idx_challenge_submissions_user_correct');
     }),
 
     // Echo score history indexes
@@ -80,8 +80,8 @@ exports.down = function(knex) {
     // Drop challenge submissions indexes
     knex.schema.table('challenge_submissions', function(table) {
       table.dropIndex(['user_id', 'created_at'], 'idx_challenge_submissions_user_created');
-      table.dropIndex(['user_id', 'difficulty'], 'idx_challenge_submissions_user_difficulty');
-      table.dropIndex(['user_id', 'type'], 'idx_challenge_submissions_user_type');
+      table.dropIndex('challenge_id', 'idx_challenge_submissions_challenge');
+      table.dropIndex(['user_id', 'is_correct'], 'idx_challenge_submissions_user_correct');
     }),
 
     // Drop echo score history indexes
