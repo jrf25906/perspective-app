@@ -1,10 +1,13 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { serverConfig, isTest } from './config/server.config';
-import { setupAllMiddleware, setupMaintenanceMiddleware } from './setup/middleware.setup';
-import { setupAllRoutes } from './setup/routes.setup';
-import { setupSchedulers } from './setup/scheduler.setup';
-import { setupGracefulShutdown } from './setup/shutdown.setup';
+import { serverConfig, isTest } from './app-config';
+import { 
+  setupAllMiddleware, 
+  setupMaintenanceMiddleware,
+  setupAllRoutes,
+  setupSchedulers,
+  setupGracefulShutdown
+} from './setup';
 
 // Load environment variables
 dotenv.config();
@@ -38,4 +41,4 @@ if (!isTest) {
   });
 }
 
-export default app;
+export default app; 

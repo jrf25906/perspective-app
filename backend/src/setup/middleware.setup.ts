@@ -3,8 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { serverConfig, isTest, isDevelopment } from '../config/server.config';
-import { helmetConfig, generalLimiter, authLimiter } from '../config/security.config';
+import { serverConfig, isTest, isDevelopment } from '../app-config/server.config';
+import { helmetConfig, generalLimiter, authLimiter } from '../app-config/security.config';
 import requestLogger from '../middleware/requestLogger';
 
 export function setupSecurityMiddleware(app: Express): void {

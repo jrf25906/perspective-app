@@ -6,7 +6,7 @@ This backend application follows a modular architecture to improve maintainabili
 
 ```
 src/
-├── config/           # Configuration modules
+├── app-config/       # Configuration modules
 │   ├── server.config.ts    # Server configuration (port, env, CORS, etc.)
 │   └── security.config.ts  # Security settings (helmet, rate limiting)
 ├── setup/            # Application setup modules
@@ -21,12 +21,13 @@ src/
 ├── models/          # Data models
 ├── db/              # Database connection and queries
 ├── types/           # TypeScript type definitions
+├── config.ts        # Database configuration (legacy)
 └── server.ts        # Main application entry point
 ```
 
 ## Module Responsibilities
 
-### Configuration (`config/`)
+### Configuration (`app-config/`)
 - **server.config.ts**: Centralizes all server-related configuration including environment variables, port settings, CORS options, and feature flags
 - **security.config.ts**: Contains security middleware configurations for helmet and rate limiting
 

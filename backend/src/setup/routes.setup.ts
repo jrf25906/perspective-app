@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { serverConfig } from '../config/server.config';
+import { serverConfig } from '../app-config/server.config';
 import authRoutes from '../routes/authRoutes';
 import challengeRoutes from '../routes/challengeRoutes';
 import profileRoutes from '../routes/profileRoutes';
