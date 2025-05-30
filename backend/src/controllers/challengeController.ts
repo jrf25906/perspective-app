@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-const challengeService = require('../services/challengeService').default;
+import challengeService from '../services/challengeService';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 // GET /challenge/today

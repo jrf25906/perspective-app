@@ -1,6 +1,7 @@
 import Content, { BiasRating, ContentType, IContent, INewsSource } from '../models/Content';
 import newsIntegrationService from './newsIntegrationService';
 import db from '../db';
+import { URL } from 'url';
 
 interface ContentValidation {
   isValid: boolean;
