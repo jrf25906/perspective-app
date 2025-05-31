@@ -3,6 +3,10 @@ import { IAdaptiveChallengeService } from '../interfaces/IAdaptiveChallengeServi
 import { IChallengeRepository } from '../interfaces/IChallengeRepository';
 import { IXPService } from '../interfaces/IXPService';
 import { IStreakService } from '../interfaces/IStreakService';
+import { ILeaderboardService } from '../interfaces/ILeaderboardService';
+import { IChallengeStatsService } from '../interfaces/IChallengeStatsService';
+import { IChallengeAnswerService } from '../interfaces/IChallengeAnswerService';
+import { IEchoScoreService } from '../services/echoScoreService';
 
 /**
  * Service container interface
@@ -114,10 +118,10 @@ export const ServiceTokens = {
   ChallengeRepository: createServiceToken<IChallengeRepository>('ChallengeRepository'),
   XPService: createServiceToken<IXPService>('XPService'),
   StreakService: createServiceToken<IStreakService>('StreakService'),
-  LeaderboardService: createServiceToken<any>('LeaderboardService'), // TODO: Add interface
-  ChallengeStatsService: createServiceToken<any>('ChallengeStatsService'), // TODO: Add interface
-  ChallengeAnswerService: createServiceToken<any>('ChallengeAnswerService'), // TODO: Add interface
-  EchoScoreService: createServiceToken<any>('EchoScoreService'), // TODO: Add IEchoScoreService import
+  LeaderboardService: createServiceToken<ILeaderboardService>('LeaderboardService'),
+  ChallengeStatsService: createServiceToken<IChallengeStatsService>('ChallengeStatsService'),
+  ChallengeAnswerService: createServiceToken<IChallengeAnswerService>('ChallengeAnswerService'),
+  EchoScoreService: createServiceToken<IEchoScoreService>('EchoScoreService'),
   Database: createServiceToken<any>('Database')
 } as const;
 

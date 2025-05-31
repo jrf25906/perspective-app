@@ -143,4 +143,142 @@ export const getChallengeHistory = asyncHandler(async (req: AuthenticatedRequest
   });
 });
 
+// GET /challenge/:id
+export const getChallengeById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const challengeId = Number(req.params.id);
+  
+  if (!Number.isInteger(challengeId) || challengeId <= 0) {
+    res.status(400).json({ error: 'Invalid challenge ID' });
+    return;
+  }
+  
+  const challengeService = getChallengeService();
+  const challenge = await challengeService.getChallengeById(challengeId);
+  
+  if (!challenge) {
+    res.status(404).json({ error: 'Challenge not found' });
+    return;
+  }
+  
+  // Remove correct_answer from response
+  const { correct_answer, ...challengeData } = challenge;
+  
+  res.json(challengeData);
+});
+
+// GET /challenge/types/:type
+export const getChallengesByType = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const { type } = req.params;
+  const { difficulty, limit = '10', offset = '0' } = req.query;
+  
+  const challengeService = getChallengeService();
+  const challenges = await challengeService.getAllChallenges({
+    type: type as any,
+    difficulty: difficulty as any,
+    isActive: true
+  });
+  
+  // Apply pagination
+  const startIndex = parseInt(offset as string);
+  const endIndex = startIndex + parseInt(limit as string);
+  const paginatedChallenges = challenges.slice(startIndex, endIndex);
+  
+  // Remove correct_answers
+  const sanitizedChallenges = paginatedChallenges.map(challenge => {
+    const { correct_answer, ...challengeData } = challenge;
+    return challengeData;
+  });
+  
+  res.json({
+    challenges: sanitizedChallenges,
+    total: challenges.length,
+    offset: startIndex,
+    limit: parseInt(limit as string)
+  });
+});
+
+// GET /challenge/performance
+export const getChallengePerformance = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { period = '7d' } = req.query;
+  
+  const challengeService = getChallengeService();
+  const adaptiveChallengeService = getAdaptiveChallengeService();
+  
+  // Get user stats and progress analysis
+  const [stats, progress] = await Promise.all([
+    challengeService.getUserChallengeStats(userId),
+    adaptiveChallengeService.analyzeUserProgress(userId)
+  ]);
+  
+  // Calculate performance metrics based on period
+  const performanceData = {
+    overall: {
+      totalChallenges: stats.total_completed,
+      accuracy: stats.total_completed > 0 
+        ? ((stats.total_correct / stats.total_completed) * 100).toFixed(1) 
+        : 0,
+      currentStreak: stats.current_streak,
+      longestStreak: stats.longest_streak
+    },
+    byType: stats.type_performance,
+    byDifficulty: stats.difficulty_performance,
+    progress,
+    period
+  };
+  
+  res.json(performanceData);
+});
+
+// POST /challenge/batch-submit
+export const batchSubmitChallenges = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { submissions } = req.body;
+  
+  if (!Array.isArray(submissions) || submissions.length === 0) {
+    res.status(400).json({ error: 'Submissions array is required' });
+    return;
+  }
+  
+  if (submissions.length > 10) {
+    res.status(400).json({ error: 'Maximum 10 submissions allowed per batch' });
+    return;
+  }
+  
+  const challengeService = getChallengeService();
+  const results = [];
+  
+  for (const submission of submissions) {
+    const { challengeId, answer, timeSpentSeconds } = submission;
+    
+    if (!challengeId || !answer || timeSpentSeconds === undefined) {
+      results.push({
+        challengeId,
+        error: 'Invalid submission data'
+      });
+      continue;
+    }
+    
+    try {
+      const result = await challengeService.submitChallenge(
+        userId,
+        challengeId,
+        answer,
+        timeSpentSeconds
+      );
+      results.push({
+        challengeId,
+        ...result
+      });
+    } catch (error) {
+      results.push({
+        challengeId,
+        error: error.message
+      });
+    }
+  }
+  
+  res.json({ results });
+});
+
 // TODO: Add more endpoints as needed

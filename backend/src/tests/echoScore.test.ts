@@ -6,10 +6,25 @@ jest.mock('../db');
 
 describe('EchoScoreService', () => {
   let echoScoreService: any;
+  const mockDb = db as jest.Mocked<typeof db>;
+
+  // Helper function to create a mock query builder
+  const createMockQueryBuilder = (resolvedValue: any) => ({
+    where: jest.fn().mockReturnThis(),
+    join: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    count: jest.fn().mockReturnThis(),
+    first: jest.fn().mockResolvedValue(resolvedValue),
+    groupBy: jest.fn().mockReturnThis(),
+    avg: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    raw: jest.fn().mockResolvedValue(resolvedValue)
+  });
 
   beforeAll(() => {
     // Create service instance for tests
-    echoScoreService = createEchoScoreService(db);
+    echoScoreService = createEchoScoreService(mockDb);
   });
 
   beforeEach(() => {
@@ -20,7 +35,53 @@ describe('EchoScoreService', () => {
     it('should calculate echo score with all components', async () => {
       const mockUserId = 1;
       
-      // TODO: Add proper mocks for database queries
+      // Mock database queries for echo score calculation
+      // Setup different responses based on table being queried
+      (mockDb as any).mockImplementation((query: any) => {
+        if (typeof query === 'string') {
+          const tableName = query;
+          
+          if (tableName === 'article_interactions') {
+            return createMockQueryBuilder([
+              { source: 'CNN', bias_rating: -2 },
+              { source: 'Fox News', bias_rating: 2 },
+              { source: 'BBC', bias_rating: 0 },
+              { source: 'NPR', bias_rating: -1 },
+              { source: 'WSJ', bias_rating: 1 }
+            ]);
+          }
+          
+          if (tableName === 'challenge_submissions') {
+            const builder = createMockQueryBuilder({ count: '50' });
+            builder.select = jest.fn().mockResolvedValue([
+              { is_correct: true, count: '40' },
+              { is_correct: false, count: '10' }
+            ]);
+            return builder;
+          }
+          
+          if (tableName === 'users') {
+            return createMockQueryBuilder({
+              id: mockUserId,
+              created_at: new Date('2023-01-01')
+            });
+          }
+          
+          if (tableName === 'user_echo_scores') {
+            const builder = createMockQueryBuilder({ avg_score: 72.5 });
+            builder.select = jest.fn().mockResolvedValue([
+              { total_score: 75, created_at: new Date() },
+              { total_score: 70, created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+            ]);
+            return builder;
+          }
+        }
+        
+        // For raw queries
+        return {
+          raw: jest.fn((sql: string) => sql)
+        };
+      });
       
       const score = await echoScoreService.calculateEchoScore(mockUserId);
       
@@ -37,7 +98,27 @@ describe('EchoScoreService', () => {
     });
 
     it('should return 0 scores when user has no activity', async () => {
-      // Mock user with no activity
+      // Mock empty results for all queries
+      (mockDb as any).mockImplementation((query: any) => {
+        if (typeof query === 'string') {
+          return {
+            where: jest.fn().mockReturnThis(),
+            join: jest.fn().mockReturnThis(),
+            select: jest.fn().mockResolvedValue([]),
+            count: jest.fn().mockReturnThis(),
+            first: jest.fn().mockResolvedValue({ count: '0' }),
+            groupBy: jest.fn().mockReturnThis(),
+            avg: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
+            raw: jest.fn().mockResolvedValue([])
+          };
+        }
+        return {
+          raw: jest.fn((sql: string) => sql)
+        };
+      });
+      
       const score = await echoScoreService.calculateEchoScore(1);
       
       expect(score.diversity_score).toBe(0);

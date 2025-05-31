@@ -21,9 +21,12 @@ class DependencyContainer {
      */
     private func registerServices() {
         // Register default implementations
-        // TODO: Uncomment once services implement their protocols
-        // register(APIServiceProtocol.self, service: APIService.shared)
-        // register(OfflineDataManagerProtocol.self, service: OfflineDataManager.shared)
+        register(APIService.self, service: APIService.shared)
+        register(OfflineDataManager.self, service: OfflineDataManager.shared)
+        register(BackgroundTaskManager.self, service: BackgroundTaskManager.shared)
+        register(NotificationManager.self, service: NotificationManager.shared)
+        register(CacheManager.self, service: CacheManager())
+        register(SyncManager.self, service: SyncManager.shared)
     }
     
     /**
@@ -48,7 +51,7 @@ class DependencyContainer {
 
 /**
  * Property wrapper for dependency injection
- * Usage: @Injected var apiService: APIServiceProtocol
+ * Usage: @Injected var apiService: APIService
  */
 @propertyWrapper
 struct Injected<T> {

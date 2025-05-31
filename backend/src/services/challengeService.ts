@@ -13,22 +13,9 @@ import { IAdaptiveChallengeService } from '../interfaces/IAdaptiveChallengeServi
 import { IChallengeRepository } from '../interfaces/IChallengeRepository';
 import { IXPService } from '../interfaces/IXPService';
 import { IStreakService } from '../interfaces/IStreakService';
-
-// Import other needed interfaces
-interface IChallengeAnswerService {
-  checkAnswer(challenge: Challenge, answer: any): Promise<boolean>;
-  generateFeedback(challenge: Challenge, answer: any, isCorrect: boolean): string;
-}
-
-interface IChallengeStatsService {
-  updateStats(userId: number, challengeId: number, isCorrect: boolean): Promise<void>;
-  getUserChallengeStats(userId: number): Promise<UserChallengeStats>;
-  getUserChallengeHistory(userId: number, limit: number, offset: number): Promise<any[]>;
-}
-
-interface ILeaderboardService {
-  getLeaderboard(timeframe: 'daily' | 'weekly' | 'allTime'): Promise<any[]>;
-}
+import { ILeaderboardService } from '../interfaces/ILeaderboardService';
+import { IChallengeStatsService } from '../interfaces/IChallengeStatsService';
+import { IChallengeAnswerService } from '../interfaces/IChallengeAnswerService';
 
 export class ChallengeService implements IChallengeService {
   constructor(

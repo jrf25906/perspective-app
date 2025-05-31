@@ -159,4 +159,97 @@ class APIService: ObservableObject, APIServiceProtocol {
 }
 
 // The following types and extensions have been moved to APIModels.swift
-// Remove them from here to avoid duplication 
+// Remove them from here to avoid duplication
+
+// MARK: - Async/Await Extensions
+
+extension APIService {
+    
+    // MARK: - Challenge Methods
+    
+    func getTodayChallenge() async throws -> Challenge {
+        try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            cancellable = getTodayChallenge()
+                .sink(
+                    receiveCompletion: { completion in
+                        switch completion {
+                        case .finished:
+                            break
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { challenge in
+                        continuation.resume(returning: challenge)
+                        cancellable?.cancel()
+                    }
+                )
+        }
+    }
+    
+    func getChallengeStats() async throws -> ChallengeStats? {
+        try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            cancellable = getChallengeStats()
+                .sink(
+                    receiveCompletion: { completion in
+                        switch completion {
+                        case .finished:
+                            break
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { stats in
+                        continuation.resume(returning: stats)
+                        cancellable?.cancel()
+                    }
+                )
+        }
+    }
+    
+    func submitChallenge(challengeId: Int, userAnswer: Any, timeSpent: Int) async throws -> ChallengeResult {
+        try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            cancellable = submitChallenge(challengeId: challengeId, userAnswer: userAnswer, timeSpent: timeSpent)
+                .sink(
+                    receiveCompletion: { completion in
+                        switch completion {
+                        case .finished:
+                            break
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { result in
+                        continuation.resume(returning: result)
+                        cancellable?.cancel()
+                    }
+                )
+        }
+    }
+    
+    // MARK: - Achievement Methods
+    
+    func getUserAchievements() async throws -> [Achievement]? {
+        // For now, return mock data until the backend endpoint is ready
+        return [
+            Achievement(
+                id: "first_challenge",
+                name: "First Steps",
+                description: "Complete your first challenge",
+                icon: "foot.2",
+                pointValue: 50,
+                isEarned: true,
+                earnedAt: Date(),
+                category: .milestone,
+                requirements: [],
+                rewards: []
+            )
+        ]
+    }
+} 

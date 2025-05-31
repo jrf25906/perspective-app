@@ -64,6 +64,7 @@ struct ProfileView: View {
 
 struct ProfileStatsGridView: View {
     @EnvironmentObject var apiService: APIService
+    @StateObject private var statsViewModel = ProfileStatsViewModel()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -88,18 +89,21 @@ struct ProfileStatsGridView: View {
                 
                 StatCard(
                     title: "Challenges",
-                    value: "0", // TODO: Get from backend
+                    value: "\(statsViewModel.totalChallenges)",
                     icon: "brain.head.profile",
                     color: .purple
                 )
                 
                 StatCard(
                     title: "Accuracy",
-                    value: "0%", // TODO: Calculate from challenges
+                    value: String(format: "%.1f%%", statsViewModel.accuracy),
                     icon: "target",
                     color: .green
                 )
             }
+        }
+        .onAppear {
+            statsViewModel.loadStats(apiService: apiService)
         }
     }
 }
@@ -350,14 +354,58 @@ struct SettingsRow: View {
 
 class ProfileViewModel: ObservableObject {
     @Published var isLoading = false
+    @Published var challengeStats: ChallengeStats?
+    @Published var achievements: [Achievement] = []
     
     func loadProfileData() {
-        // TODO: Load additional profile data like challenge stats, achievements
         isLoading = true
         
-        // Simulate loading
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isLoading = false
+        Task {
+            do {
+                // Load challenge stats
+                if let stats = try await APIService.shared.getChallengeStats() {
+                    await MainActor.run {
+                        self.challengeStats = stats
+                    }
+                }
+                
+                // Load achievements
+                if let achievements = try await APIService.shared.getUserAchievements() {
+                    await MainActor.run {
+                        self.achievements = achievements
+                    }
+                }
+            } catch {
+                print("Error loading profile data: \(error)")
+            }
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
+}
+
+// MARK: - Stats View Model
+
+class ProfileStatsViewModel: ObservableObject {
+    @Published var totalChallenges: Int = 0
+    @Published var accuracy: Double = 0.0
+    
+    func loadStats(apiService: APIService) {
+        Task {
+            do {
+                if let stats = try await apiService.getChallengeStats() {
+                    await MainActor.run {
+                        self.totalChallenges = stats.totalCompleted
+                        self.accuracy = stats.totalCompleted > 0 
+                            ? (Double(stats.totalCorrect) / Double(stats.totalCompleted)) * 100.0 
+                            : 0.0
+                    }
+                }
+            } catch {
+                print("Error loading challenge stats: \(error)")
+            }
         }
     }
 }
