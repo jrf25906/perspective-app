@@ -4,6 +4,7 @@ import {
   setupSchedulers,
   setupGracefulShutdown
 } from './setup';
+import logger from './utils/logger';
 
 // Check if we're running in simple mode
 const isSimpleMode = process.env.SIMPLE_MODE === 'true' || process.argv.includes('--simple');
@@ -22,19 +23,13 @@ if (!isSimpleMode && !isTest) {
 
 // Start server
 if (!isTest) {
-  app.listen(serverConfig.port, () => {
-    if (isSimpleMode) {
-      console.log(`Simple TypeScript server running on port ${serverConfig.port}`);
-      console.log(`Environment: ${serverConfig.environment}`);
-      console.log(`Auth endpoints available at http://localhost:${serverConfig.port}/api/auth/`);
-    } else {
-      console.log(`🚀 Server running on port ${serverConfig.port}`);
-      console.log(`📊 Environment: ${serverConfig.environment}`);
-      console.log(`🔒 Security: Enhanced middleware enabled`);
-      console.log(`🏥 Health check: http://localhost:${serverConfig.port}/health`);
-      console.log(`⚡ Rate limiting: Enabled`);
-      console.log(`💉 Dependency injection: Configured`);
-    }
+  const server = app.listen(serverConfig.port, () => {
+    logger.info(`🚀 Server running on port ${serverConfig.port}`);
+    logger.info(`📊 Environment: ${serverConfig.environment}`);
+    logger.info(`🔒 Security: Enhanced middleware enabled`);
+    logger.info(`🏥 Health check: http://localhost:${serverConfig.port}/health`);
+    logger.info(`⚡ Rate limiting: Enabled`);
+    logger.info(`💉 Dependency injection: Configured`);
   });
 }
 

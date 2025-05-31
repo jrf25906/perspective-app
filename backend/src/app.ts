@@ -6,6 +6,7 @@ import {
 } from './setup';
 import { registerServices } from './di/serviceRegistration';
 import { container } from './di/container';
+import logger from './utils/logger';
 
 export interface AppConfig {
   registerDefaultServices?: boolean;
@@ -24,7 +25,7 @@ export function createApp(config: AppConfig = {}): Application {
 
   // Register services if requested
   if (registerDefaultServices) {
-    console.log('🔧 Initializing dependency injection container...');
+    logger.info('🔧 Initializing dependency injection container...');
     registerServices();
   }
 

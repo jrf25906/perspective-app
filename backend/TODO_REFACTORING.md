@@ -1,33 +1,82 @@
 # Refactoring TODO
 
-## Interface Mismatches
+## ✅ Completed Tasks
 
-The following service implementations need to be updated to match their interfaces:
+### 1. Interface Alignment
+- Fixed AdaptiveChallengeService.analyzeUserProgress() return type
+- Verified all other interfaces match implementations
 
-### 1. ChallengeRepository
-- Missing method: `recordDailyChallengeSelection(userId: number, challengeId: number): Promise<void>`
+### 2. Structured Logging Setup
+- Created Winston logger utility with file and console output
+- Applied to core system files (server, app, db)
+- Added logs directory to .gitignore
 
-### 2. AdaptiveChallengeService
-- Return type mismatch in `analyzeUserProgress()`: 
-  - Current returns `suggestedFocus` property
-  - Interface expects `recommendedFocus` property
-  - Current returns `ChallengeType[]` arrays
-  - Interface expects `string[]` arrays
+### 3. Test Configuration
+- Created Jest configuration for TypeScript
+- Installed ts-jest
+- Updated test imports to use source files
 
-### 3. XPService
-- Return type mismatch in `checkAndAwardAchievements()`:
-  - Current returns `{ newAchievements: string[]; xpAwarded: number; }`
-  - Interface expects `Promise<void>`
+### 4. Request Validation
+- Created validation middleware using Joi
+- Applied to challenge routes as example
+- Created reusable validation schemas
 
-### 4. StreakService
-- Missing methods:
-  - `getUserStreakInfo`
-  - `hasUserBeenActiveToday`
+## 🚧 In Progress Tasks
 
-## Resolution Strategy
+### 1. Remove Singleton Exports (11 services affected)
+```bash
+# Run helper script to see current status
+npm run ts-node src/scripts/refactor-helpers.ts
+```
 
-These mismatches should be resolved by either:
-1. Updating the service implementations to match the interfaces, or
-2. Updating the interfaces to match the current implementations
+**Files to update:**
+- challengeAnswerService.ts
+- leaderboardService.ts
+- contentCurationService.ts
+- streakService.ts
+- biasRatingService.ts
+- xpService.ts
+- newsIntegrationService.ts
+- contentIngestionScheduler.ts
+- challengeStatsService.ts
+- adaptiveChallengeService.ts
+- challengeRepository.ts
 
-This should be done as a separate refactoring task to avoid breaking existing functionality. 
+### 2. Complete Logger Migration (~50 occurrences)
+Replace all console.log/error/warn with appropriate logger calls.
+
+### 3. Apply Validation to Remaining Routes
+- Auth routes
+- User routes
+- Content routes
+- Admin routes
+
+## 📋 Quick Reference
+
+### Using the Logger
+```typescript
+import logger from '../utils/logger';
+logger.info('Message');
+logger.error('Error', error);
+logger.warn('Warning');
+```
+
+### Using Validation
+```typescript
+import { validate } from '../middleware/validation';
+router.post('/route', validate({ body: schema }), handler);
+```
+
+### Using DI Container
+```typescript
+import { container, ServiceTokens } from '../di/container';
+const service = container.get(ServiceTokens.ServiceName);
+```
+
+## 🎯 Priority Order
+
+1. **High**: Remove singleton exports (breaks DI pattern)
+2. **Medium**: Complete logger migration (improves debugging)
+3. **Low**: Add validation to all routes (enhances security)
+
+See `REFACTORING_SUMMARY.md` for detailed documentation of all changes. 

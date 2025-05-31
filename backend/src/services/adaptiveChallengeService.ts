@@ -628,7 +628,6 @@ export class AdaptiveChallengeService {
     weaknesses: ChallengeType[];
     recommendedFocus: ChallengeType[];
     progressTrend: 'improving' | 'stable' | 'declining';
-    readyForAdvanced: boolean;
   }> {
     const profile = await this.buildUserPerformanceProfile(userId);
     
@@ -656,11 +655,6 @@ export class AdaptiveChallengeService {
       progressTrend = 'stable';
     }
 
-    // Check if ready for advanced challenges
-    const advancedPerf = profile.difficultyPerformance.get(DifficultyLevel.ADVANCED);
-    const readyForAdvanced = profile.recentSuccessRate > 0.8 && 
-      (!advancedPerf || advancedPerf.successRate > 0.6);
-
     // Suggested focus areas (weaknesses that haven't been attempted much recently)
     const recommendedFocus = weaknesses.filter(w => 
       profile.lastChallengeTypes.filter(t => t === w).length < 2
@@ -670,8 +664,7 @@ export class AdaptiveChallengeService {
       strengths,
       weaknesses,
       recommendedFocus,
-      progressTrend,
-      readyForAdvanced
+      progressTrend
     };
   }
 }

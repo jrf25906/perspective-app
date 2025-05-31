@@ -1,7 +1,9 @@
 import request from "supertest";
-import app from "../dist/server";
+import { createTestApp } from "../src/app";
 
 describe("GET /challenge/today", () => {
+  const app = createTestApp();
+  
   it("should return today's challenge", async () => {
     const res = await request(app).get("/challenge/today");
     expect(res.statusCode).toBe(200);

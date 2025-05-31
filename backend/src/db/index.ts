@@ -1,5 +1,6 @@
 import knex from 'knex';
 import config from '../config';
+import logger from '../utils/logger';
 
 // Determine database client from environment
 const dbClient = process.env.DB_CLIENT || 'pg';
@@ -50,10 +51,10 @@ const db = knex(dbConfig);
 // Test database connection
 db.raw('SELECT 1')
   .then(() => {
-    console.log(`Database connected successfully (${dbClient})`);
+    logger.info(`Database connected successfully (${dbClient})`);
   })
-  .catch((err) => {
-    console.error('Database connection failed:', err);
+  .catch((err: Error) => {
+    logger.error('Database connection failed:', err);
     process.exit(1);
   });
 

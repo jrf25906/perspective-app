@@ -176,17 +176,4 @@ export function createChallengeService(
     leaderboardService,
     challengeStatsService
   );
-}
-
-// Keep default export for backward compatibility, but mark as deprecated
-/** @deprecated Use dependency injection instead */
-export default new ChallengeService(
-  require('../db').default,
-  require('./adaptiveChallengeService').default,
-  require('./challengeRepository').default,
-  require('./challengeAnswerService').default,
-  require('./xpService').default,
-  require('./streakService').default,
-  require('./leaderboardService').default,
-  require('./challengeStatsService').default
-); 
+} 
