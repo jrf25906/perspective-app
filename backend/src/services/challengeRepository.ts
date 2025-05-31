@@ -125,4 +125,7 @@ export class ChallengeRepository {
   }
 }
 
-export default new ChallengeRepository(); 
+// Factory function for DI
+export function createChallengeRepository(): ChallengeRepository {
+  return new ChallengeRepository();
+}

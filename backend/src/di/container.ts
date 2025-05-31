@@ -122,6 +122,10 @@ export const ServiceTokens = {
   ChallengeStatsService: createServiceToken<IChallengeStatsService>('ChallengeStatsService'),
   ChallengeAnswerService: createServiceToken<IChallengeAnswerService>('ChallengeAnswerService'),
   EchoScoreService: createServiceToken<IEchoScoreService>('EchoScoreService'),
+  BiasRatingService: createServiceToken<any>('BiasRatingService'),
+  ContentCurationService: createServiceToken<any>('ContentCurationService'),
+  ContentIngestionScheduler: createServiceToken<any>('ContentIngestionScheduler'),
+  NewsIntegrationService: createServiceToken<any>('NewsIntegrationService'),
   Database: createServiceToken<any>('Database')
 } as const;
 

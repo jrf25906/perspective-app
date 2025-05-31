@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../utils/logger';
 import Content, { BiasRating, ContentType, IContent, INewsSource } from '../models/Content';
 import config from '../config';
 import { processWithErrors, retryWithBackoff } from '../utils/concurrentProcessing';
@@ -39,7 +40,7 @@ interface AllSidesApiResponse {
   total: number;
 }
 
-class NewsIntegrationService {
+export class NewsIntegrationService {
   private newsApiKey: string;
   private allSidesApiKey?: string;
 
@@ -100,7 +101,7 @@ class NewsIntegrationService {
         keywords: this.extractKeywords(article.title + ' ' + article.excerpt),
       }));
     } catch (error) {
-      console.error('Error fetching from AllSides:', error);
+      logger.error('Error fetching from AllSides:', error);
       return this.getMockAllSidesData(topic);
     }
   }
@@ -138,7 +139,7 @@ class NewsIntegrationService {
         keywords: this.extractKeywords(article.title + ' ' + article.description),
       }));
     } catch (error) {
-      console.error('Error fetching from News API:', error);
+      logger.error('Error fetching from News API:', error);
       throw error;
     }
   }
@@ -250,7 +251,7 @@ class NewsIntegrationService {
         concurrencyLimit: 5, // Limit concurrent API calls to respect rate limits
         continueOnError: true,
         onError: (error, topic) => {
-          console.error(`Failed to fetch AllSides articles for topic "${topic}":`, error.message);
+          logger.error(`Failed to fetch AllSides articles for topic "${topic}":`, error.message);
         }
       }
     );
@@ -269,7 +270,7 @@ class NewsIntegrationService {
         );
         allArticles.push(...newsApiArticles);
       } catch (error) {
-        console.error('Failed to fetch from News API:', error);
+        logger.error('Failed to fetch from News API:', error);
       }
     }
 
@@ -282,4 +283,7 @@ class NewsIntegrationService {
   }
 }
 
-export default new NewsIntegrationService(); 
+// Factory function for DI
+export function createNewsIntegrationService(): NewsIntegrationService {
+  return new NewsIntegrationService();
+}

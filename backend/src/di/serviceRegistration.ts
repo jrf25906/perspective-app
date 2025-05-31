@@ -1,14 +1,18 @@
 import { container, ServiceTokens, ServiceToken } from './container';
 import db from '../db';
 import { createChallengeService } from '../services/challengeService';
-import adaptiveChallengeService from '../services/adaptiveChallengeService';
-import challengeRepository from '../services/challengeRepository';
-import challengeAnswerService from '../services/challengeAnswerService';
-import xpService from '../services/xpService';
-import streakService from '../services/streakService';
-import leaderboardService from '../services/leaderboardService';
-import challengeStatsService from '../services/challengeStatsService';
+import { createAdaptiveChallengeService } from '../services/adaptiveChallengeService';
+import { createChallengeRepository } from '../services/challengeRepository';
+import { createChallengeAnswerService } from '../services/challengeAnswerService';
+import { createXPService } from '../services/xpService';
+import { createStreakService } from '../services/streakService';
+import { createLeaderboardService } from '../services/leaderboardService';
+import { createChallengeStatsService } from '../services/challengeStatsService';
 import { createEchoScoreService } from '../services/echoScoreService';
+import { createBiasRatingService } from '../services/biasRatingService';
+import { createContentCurationService } from '../services/contentCurationService';
+import { createContentIngestionScheduler } from '../services/contentIngestionScheduler';
+import { createNewsIntegrationService } from '../services/newsIntegrationService';
 
 /**
  * Register all services in the DI container
@@ -19,15 +23,15 @@ export function registerServices(): void {
   container.registerSingleton(ServiceTokens.Database, db);
 
   // Register repositories
-  container.registerSingleton(ServiceTokens.ChallengeRepository, challengeRepository);
+  container.register(ServiceTokens.ChallengeRepository, () => createChallengeRepository());
 
-  // Register services as singletons (for now, using existing instances)
-  container.registerSingleton(ServiceTokens.AdaptiveChallengeService, adaptiveChallengeService);
-  container.registerSingleton(ServiceTokens.ChallengeAnswerService, challengeAnswerService);
-  container.registerSingleton(ServiceTokens.XPService, xpService);
-  container.registerSingleton(ServiceTokens.StreakService, streakService);
-  container.registerSingleton(ServiceTokens.LeaderboardService, leaderboardService);
-  container.registerSingleton(ServiceTokens.ChallengeStatsService, challengeStatsService);
+  // Register services
+  container.register(ServiceTokens.AdaptiveChallengeService, () => createAdaptiveChallengeService());
+  container.register(ServiceTokens.ChallengeAnswerService, () => createChallengeAnswerService());
+  container.register(ServiceTokens.XPService, () => createXPService());
+  container.register(ServiceTokens.StreakService, () => createStreakService());
+  container.register(ServiceTokens.LeaderboardService, () => createLeaderboardService());
+  container.register(ServiceTokens.ChallengeStatsService, () => createChallengeStatsService());
 
   // Register ChallengeService with proper dependencies
   container.register(ServiceTokens.ChallengeService, () => {
@@ -47,6 +51,11 @@ export function registerServices(): void {
   container.register(ServiceTokens.EchoScoreService, () => {
     return createEchoScoreService(container.get(ServiceTokens.Database));
   });
+  // Register additional services
+  container.register(ServiceTokens.BiasRatingService, () => createBiasRatingService());
+  container.register(ServiceTokens.ContentCurationService, () => createContentCurationService());
+  container.register(ServiceTokens.ContentIngestionScheduler, () => createContentIngestionScheduler());
+  container.register(ServiceTokens.NewsIntegrationService, () => createNewsIntegrationService());
 }
 
 /**
@@ -56,4 +65,4 @@ export function registerServices(): void {
  */
 export function getService<T>(token: ServiceToken<T>): T {
   return container.get(token);
-} 
+}

@@ -1,7 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { container, ServiceTokens } from '../di/container';
+import logger from '../utils/logger';
 import Content from '../models/Content';
-import biasRatingService from '../services/biasRatingService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+
+
+// Get services from DI container  
+const getBiasRatingService = () => container.get(ServiceTokens.BiasRatingService);
 
 const router = Router();
 
@@ -14,7 +19,7 @@ router.get('/trending', async (req: Request, res: Response) => {
     
     res.json(topics.slice(0, Number(limit)));
   } catch (error) {
-    console.error('Error fetching trending topics:', error);
+    logger.error('Error fetching trending topics:', error);
     res.status(500).json({ error: 'Failed to fetch trending topics' });
   }
 });
@@ -31,7 +36,7 @@ router.get('/articles/:id', async (req: Request, res: Response) => {
     
     res.json(article);
   } catch (error) {
-    console.error('Error fetching article:', error);
+    logger.error('Error fetching article:', error);
     res.status(500).json({ error: 'Failed to fetch article' });
   }
 });
@@ -76,7 +81,7 @@ router.get('/search', async (req: Request, res: Response) => {
     
     res.json(articles);
   } catch (error) {
-    console.error('Error searching articles:', error);
+    logger.error('Error searching articles:', error);
     res.status(500).json({ error: 'Failed to search articles' });
   }
 });
@@ -91,10 +96,10 @@ router.get('/topic/:topic', async (req: Request, res: Response) => {
     res.json({
       topic,
       articles,
-      biasDistribution: biasRatingService.getBiasDistribution(articles),
+      biasDistribution: getBiasRatingService().getBiasDistribution(articles),
     });
   } catch (error) {
-    console.error('Error fetching articles by topic:', error);
+    logger.error('Error fetching articles by topic:', error);
     res.status(500).json({ error: 'Failed to fetch articles' });
   }
 });
@@ -112,7 +117,7 @@ router.get('/feed', async (req: AuthenticatedRequest, res: Response) => {
     
     res.json(feed);
   } catch (error) {
-    console.error('Error fetching feed:', error);
+    logger.error('Error fetching feed:', error);
     res.status(500).json({ error: 'Failed to fetch feed' });
   }
 });
@@ -126,7 +131,7 @@ router.get('/recommendations', async (req: AuthenticatedRequest, res: Response) 
       return res.status(400).json({ error: 'Topic is required' });
     }
     
-    const recommendations = await biasRatingService.getBalancedRecommendations(
+    const recommendations = await getBiasRatingService().getBalancedRecommendations(
       userId,
       topic as string,
       Number(count)
@@ -134,7 +139,7 @@ router.get('/recommendations', async (req: AuthenticatedRequest, res: Response) 
     
     res.json(recommendations);
   } catch (error) {
-    console.error('Error fetching recommendations:', error);
+    logger.error('Error fetching recommendations:', error);
     res.status(500).json({ error: 'Failed to fetch recommendations' });
   }
 });
@@ -148,7 +153,7 @@ router.post('/articles/:id/view', async (req: AuthenticatedRequest, res: Respons
     
     res.json({ message: 'View logged successfully' });
   } catch (error) {
-    console.error('Error logging view:', error);
+    logger.error('Error logging view:', error);
     res.status(500).json({ error: 'Failed to log view' });
   }
 });
@@ -162,7 +167,7 @@ router.get('/history', async (req: AuthenticatedRequest, res: Response) => {
     
     res.json(history);
   } catch (error) {
-    console.error('Error fetching history:', error);
+    logger.error('Error fetching history:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
@@ -172,11 +177,11 @@ router.get('/bias-analysis', async (req: AuthenticatedRequest, res: Response) =>
     const userId = req.user!.id;
     const { days = 30 } = req.query;
     
-    const analysis = await biasRatingService.analyzeUserBias(userId, Number(days));
+    const analysis = await getBiasRatingService().analyzeUserBias(userId, Number(days));
     
     res.json(analysis);
   } catch (error) {
-    console.error('Error analyzing bias:', error);
+    logger.error('Error analyzing bias:', error);
     res.status(500).json({ error: 'Failed to analyze bias' });
   }
 });

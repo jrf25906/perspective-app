@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
+import logger from '../utils/logger';
 // Extend Request interface to include our custom property
 declare module 'express-serve-static-core' {
   interface Request {
@@ -15,7 +16,7 @@ const requestLogger = (req: Request, res: Response, next: NextFunction): void =>
   const startTime = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    console.log(`[${requestId}] ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+    logger.info(`[${requestId}] ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
   });
 
   next();

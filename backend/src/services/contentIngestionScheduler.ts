@@ -1,6 +1,7 @@
 import * as cron from 'node-cron';
+import logger from '../utils/logger';
 const cronParser = require('cron-parser');
-import contentCurationService from './contentCurationService';
+import { container, ServiceTokens } from '../di/container';
 import Content from '../models/Content';
 import db from '../db';
 
@@ -21,7 +22,7 @@ interface IngestionResult {
   error?: string;
 }
 
-class ContentIngestionScheduler {
+export class ContentIngestionScheduler {
   private scheduledTask: cron.ScheduledTask | null = null;
   private isRunning: boolean = false;
   private lastRunResult: IngestionResult | null = null;
@@ -33,6 +34,10 @@ class ContentIngestionScheduler {
     maxArticlesPerRun: 100,
     notifyOnError: true,
   };
+
+  private getContentCurationService() {
+    return container.get(ServiceTokens.ContentCurationService);
+  }
 
   /**
    * Initialize the scheduler with configuration
@@ -49,7 +54,7 @@ class ContentIngestionScheduler {
       this.config = { ...this.config, ...savedConfig };
     }
 
-    console.log('Content Ingestion Scheduler initialized with config:', this.config);
+    logger.info('Content Ingestion Scheduler initialized with config:', this.config);
 
     if (this.config.enabled) {
       this.start();
@@ -61,17 +66,17 @@ class ContentIngestionScheduler {
    */
   start(): void {
     if (this.scheduledTask) {
-      console.log('Scheduler already running');
+      logger.info('Scheduler already running');
       return;
     }
 
-    console.log(`Starting content ingestion scheduler with cron: ${this.config.schedule}`);
+    logger.info(`Starting content ingestion scheduler with cron: ${this.config.schedule}`);
     
     this.scheduledTask = cron.schedule(this.config.schedule, async () => {
       await this.runIngestion();
     });
 
-    console.log('Content ingestion scheduler started');
+    logger.info('Content ingestion scheduler started');
   }
 
   /**
@@ -81,7 +86,7 @@ class ContentIngestionScheduler {
     if (this.scheduledTask) {
       this.scheduledTask.stop();
       this.scheduledTask = null;
-      console.log('Content ingestion scheduler stopped');
+      logger.info('Content ingestion scheduler stopped');
     }
   }
 
@@ -90,7 +95,7 @@ class ContentIngestionScheduler {
    */
   async runIngestion(topics?: string[]): Promise<IngestionResult> {
     if (this.isRunning) {
-      console.log('Ingestion already in progress, skipping...');
+      logger.info('Ingestion already in progress, skipping...');
       return {
         timestamp: new Date(),
         ingested: 0,
@@ -105,7 +110,7 @@ class ContentIngestionScheduler {
     const startTime = Date.now();
     const topicsToIngest = topics || this.config.topics;
 
-    console.log(`Starting content ingestion for topics: ${topicsToIngest.join(', ')}`);
+    logger.info(`Starting content ingestion for topics: ${topicsToIngest.join(', ')}`);
 
     try {
       // Ensure we have active news sources
@@ -119,7 +124,7 @@ class ContentIngestionScheduler {
       }
 
       // Run the batch ingestion
-      const results = await contentCurationService.batchIngestFromSources(topicsToIngest);
+      const results = await this.getContentCurationService().batchIngestFromSources(topicsToIngest);
 
       const duration = (Date.now() - startTime) / 1000;
 
@@ -133,7 +138,7 @@ class ContentIngestionScheduler {
       await this.logIngestionResult(result);
       this.lastRunResult = result;
 
-      console.log(`Content ingestion completed: ${results.ingested} new articles, ${results.duplicates} duplicates, ${results.failed} failed`);
+      logger.info(`Content ingestion completed: ${results.ingested} new articles, ${results.duplicates} duplicates, ${results.failed} failed`);
 
       // Run post-ingestion tasks
       await this.runPostIngestionTasks();
@@ -141,7 +146,7 @@ class ContentIngestionScheduler {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Content ingestion failed:', errorMessage);
+      logger.error('Content ingestion failed:', errorMessage);
 
       const result: IngestionResult = {
         timestamp: new Date(),
@@ -157,7 +162,7 @@ class ContentIngestionScheduler {
 
       if (this.config.notifyOnError) {
         // In production, send notification (email, Slack, etc.)
-        console.error('ALERT: Content ingestion failed!', errorMessage);
+        logger.error('ALERT: Content ingestion failed!', errorMessage);
       }
 
       return result;
@@ -183,7 +188,7 @@ class ContentIngestionScheduler {
       // 4. Generate content statistics
       await this.generateContentStats();
     } catch (error) {
-      console.error('Error in post-ingestion tasks:', error);
+      logger.error('Error in post-ingestion tasks:', error);
     }
   }
 
@@ -193,7 +198,7 @@ class ContentIngestionScheduler {
   private async updateTrendingTopicsCache(): Promise<void> {
     const trending = await Content.getTrendingTopics(1);
     // In production, cache this in Redis
-    console.log('Updated trending topics:', trending.slice(0, 5).map(t => t.topic));
+    logger.info('Updated trending topics:', trending.slice(0, 5).map(t => t.topic));
   }
 
   /**
@@ -209,7 +214,7 @@ class ContentIngestionScheduler {
       .del();
 
     if (deleted > 0) {
-      console.log(`Cleaned up ${deleted} old unverified articles`);
+      logger.info(`Cleaned up ${deleted} old unverified articles`);
     }
   }
 
@@ -248,7 +253,7 @@ class ContentIngestionScheduler {
    * Generate and store content statistics
    */
   private async generateContentStats(): Promise<void> {
-    const stats = await contentCurationService.getContentStats();
+    const stats = await this.getContentCurationService().getContentStats();
     
     // Store stats in database for historical tracking
     await db('ingestion_stats').insert({
@@ -275,7 +280,7 @@ class ContentIngestionScheduler {
         topics: JSON.stringify(this.config.topics),
       });
     } catch (error) {
-      console.error('Failed to log ingestion result:', error);
+      logger.error('Failed to log ingestion result:', error);
     }
   }
 
@@ -359,10 +364,13 @@ class ContentIngestionScheduler {
       const nextRun = interval.next();
       return nextRun.toDate();
     } catch (err) {
-      console.error('Error parsing cron expression:', err);
+      logger.error('Error parsing cron expression:', err);
       return null;
     }
   }
 }
 
-export default new ContentIngestionScheduler(); 
+// Factory function for DI
+export function createContentIngestionScheduler(): ContentIngestionScheduler {
+  return new ContentIngestionScheduler();
+}

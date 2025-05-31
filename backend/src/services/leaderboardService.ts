@@ -18,10 +18,17 @@ export class LeaderboardService {
    * Get leaderboard data for different timeframes
    */
   async getLeaderboard(
-    timeframe: 'daily' | 'weekly' | 'monthly' | 'allTime' = 'weekly',
+    timeframe: 'daily' | 'weekly' | 'allTime' = 'weekly',
     limit: number = 100,
     offset: number = 0
-  ): Promise<LeaderboardEntry[]> {
+  ): Promise<{
+    rank: number;
+    userId: number;
+    username: string;
+    score: number;
+    challengesCompleted: number;
+    accuracy: number;
+  }[]> {
     let query = db('users as u')
       .join('challenge_submissions as cs', 'u.id', 'cs.user_id')
       .select(
@@ -49,17 +56,14 @@ export class LeaderboardService {
     
     // Calculate accuracy and add rank
     return results.map((entry, index) => ({
+      rank: offset + index + 1,
       userId: entry.userId,
       username: entry.username,
-      avatarUrl: entry.avatarUrl,
+      score: parseInt(entry.total_xp), // Map totalXP to score for interface compatibility
       challengesCompleted: parseInt(entry.challenges_completed),
-      totalXP: parseInt(entry.total_xp),
-      correctAnswers: parseInt(entry.correct_answers),
       accuracy: entry.challenges_completed > 0 
         ? Math.round((entry.correct_answers / entry.challenges_completed) * 100) 
-        : 0,
-      currentStreak: entry.currentStreak || 0,
-      rank: offset + index + 1
+        : 0
     }));
   }
 
@@ -233,4 +237,7 @@ export class LeaderboardService {
   }
 }
 
-export default new LeaderboardService(); 
+// Factory function for DI
+export function createLeaderboardService(): LeaderboardService {
+  return new LeaderboardService();
+}

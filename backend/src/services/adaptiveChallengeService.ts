@@ -1,4 +1,5 @@
 import db from '../db';
+import logger from '../utils/logger';
 import { 
   Challenge, 
   ChallengeType, 
@@ -182,7 +183,7 @@ export class AdaptiveChallengeService {
             }
           }
         } catch (e) {
-          console.error('Error parsing challenge articles:', e);
+          logger.error('Error parsing challenge articles:', e);
         }
       }
     }
@@ -669,4 +670,7 @@ export class AdaptiveChallengeService {
   }
 }
 
-export default new AdaptiveChallengeService();
+// Factory function for DI
+export function createAdaptiveChallengeService(): AdaptiveChallengeService {
+  return new AdaptiveChallengeService();
+}

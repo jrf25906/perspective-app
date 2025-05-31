@@ -160,4 +160,7 @@ export class XPService {
   }
 }
 
-export default new XPService(); 
+// Factory function for DI
+export function createXPService(): XPService {
+  return new XPService();
+}

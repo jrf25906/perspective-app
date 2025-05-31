@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { generateToken, AuthenticatedRequest } from '../middleware/auth';
@@ -62,7 +63,7 @@ export class AuthController {
       });
 
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',
@@ -93,7 +94,7 @@ export class AuthController {
           audience: process.env.GOOGLE_CLIENT_ID,
         });
       } catch (error) {
-        console.error('Google token verification failed:', error);
+        logger.error('Google token verification failed:', error);
         return res.status(401).json({
           error: {
             code: 'INVALID_TOKEN',
@@ -169,7 +170,7 @@ export class AuthController {
       });
 
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      logger.error('Google sign-in error:', error);
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',
@@ -244,7 +245,7 @@ export class AuthController {
       });
 
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',
@@ -279,7 +280,7 @@ export class AuthController {
       res.json(userWithoutPassword);
 
     } catch (error) {
-      console.error('Get profile error:', error);
+      logger.error('Get profile error:', error);
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',

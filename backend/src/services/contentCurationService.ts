@@ -1,5 +1,6 @@
 import Content, { BiasRating, ContentType, IContent, INewsSource } from '../models/Content';
-import newsIntegrationService from './newsIntegrationService';
+import logger from '../utils/logger';
+import { container, ServiceTokens } from '../di/container';
 import db from '../db';
 import { URL } from 'url';
 import { processWithErrors } from '../utils/concurrentProcessing';
@@ -16,7 +17,11 @@ interface BiasAnalysis {
   indicators: string[];
 }
 
-class ContentCurationService {
+export class ContentCurationService {
+  private getNewsIntegrationService() {
+    return container.get(ServiceTokens.NewsIntegrationService);
+  }
+
   /**
    * Validate content before ingestion
    */
@@ -156,7 +161,7 @@ class ContentCurationService {
     // Validate content
     const validation = this.validateContent(contentData);
     if (!validation.isValid) {
-      console.error('Content validation failed:', validation.errors);
+      logger.error('Content validation failed:', validation.errors);
       return null;
     }
 
@@ -166,7 +171,7 @@ class ContentCurationService {
       .first();
 
     if (existingContent) {
-      console.log('Content already exists:', contentData.url);
+      logger.info('Content already exists:', contentData.url);
       return existingContent;
     }
 
@@ -240,7 +245,7 @@ class ContentCurationService {
     });
 
     // Aggregate articles from all sources
-    const articles = await newsIntegrationService.aggregateArticles(topics);
+    const articles = await this.getNewsIntegrationService().aggregateArticles(topics);
 
     // Check for duplicates in batch
     const existingUrls = await db('content')
@@ -257,7 +262,7 @@ class ContentCurationService {
     results.duplicates = articles.length - newArticles.length;
 
     // Process new articles in parallel
-    const ingestionResults = await processWithErrors(
+    const ingestionResults = await processWithErrors<Partial<IContent>, IContent | null>(
       newArticles,
       async (article) => {
         // Try to match source by URL domain
@@ -273,7 +278,7 @@ class ContentCurationService {
         concurrencyLimit: 10, // Process 10 articles concurrently
         continueOnError: true,
         onError: (error, article) => {
-          console.error(`Failed to ingest article "${article.headline}":`, error.message);
+          logger.error(`Failed to ingest article "${article.headline}":`, error.message);
         }
       }
     );
@@ -308,7 +313,7 @@ class ContentCurationService {
     const cachedContent = contentCache.get<IContent[]>(cacheKey);
     
     if (cachedContent) {
-      console.log(`Returning cached content for topic: ${topic}`);
+      logger.info(`Returning cached content for topic: ${topic}`);
       return cachedContent;
     }
 
@@ -334,7 +339,7 @@ class ContentCurationService {
 
     // Check if we have enough bias variety
     if (biasGroups.size < minBiasVariety) {
-      console.log(`Not enough bias variety for topic ${topic}: ${biasGroups.size} < ${minBiasVariety}`);
+      logger.info(`Not enough bias variety for topic ${topic}: ${biasGroups.size} < ${minBiasVariety}`);
       return [];
     }
 
@@ -416,4 +421,7 @@ class ContentCurationService {
   }
 }
 
-export default new ContentCurationService(); 
+// Factory function for DI
+export function createContentCurationService(): ContentCurationService {
+  return new ContentCurationService();
+}

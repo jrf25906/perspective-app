@@ -1,11 +1,16 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { container, ServiceTokens } from '../di/container';
+import logger from '../utils/logger';
 import Content, { BiasRating, ContentType, INewsSource } from '../models/Content';
-import contentCurationService from '../services/contentCurationService';
-import biasRatingService from '../services/biasRatingService';
-import newsIntegrationService from '../services/newsIntegrationService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import db from '../db';
-import contentIngestionScheduler from '../services/contentIngestionScheduler';
+
+
+// Get services from DI container
+const getBiasRatingService = () => container.get(ServiceTokens.BiasRatingService);
+const getContentCurationService = () => container.get(ServiceTokens.ContentCurationService);
+const getNewsIntegrationService = () => container.get(ServiceTokens.NewsIntegrationService);
+const getContentIngestionScheduler = () => container.get(ServiceTokens.ContentIngestionScheduler);
 
 const router = Router();
 
@@ -56,7 +61,7 @@ router.get('/sources', async (req: AuthenticatedRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching sources:', error);
+    logger.error('Error fetching sources:', error);
     res.status(500).json({ error: 'Failed to fetch sources' });
   }
 });
@@ -91,7 +96,7 @@ router.post('/sources', async (req: AuthenticatedRequest, res: Response) => {
     
     res.status(201).json(source);
   } catch (error) {
-    console.error('Error creating source:', error);
+    logger.error('Error creating source:', error);
     res.status(500).json({ error: 'Failed to create source' });
   }
 });
@@ -115,7 +120,7 @@ router.put('/sources/:id', async (req: AuthenticatedRequest, res: Response) => {
     
     res.json(updated);
   } catch (error) {
-    console.error('Error updating source:', error);
+    logger.error('Error updating source:', error);
     res.status(500).json({ error: 'Failed to update source' });
   }
 });
@@ -139,7 +144,7 @@ router.delete('/sources/:id', async (req: AuthenticatedRequest, res: Response) =
     
     res.json({ message: 'Source deactivated successfully' });
   } catch (error) {
-    console.error('Error deleting source:', error);
+    logger.error('Error deleting source:', error);
     res.status(500).json({ error: 'Failed to delete source' });
   }
 });
@@ -216,7 +221,7 @@ router.get('/content', async (req: AuthenticatedRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching content:', error);
+    logger.error('Error fetching content:', error);
     res.status(500).json({ error: 'Failed to fetch content' });
   }
 });
@@ -229,14 +234,14 @@ router.post('/content/ingest', async (req: AuthenticatedRequest, res: Response) 
       return res.status(400).json({ error: 'Topics array is required' });
     }
     
-    const results = await contentCurationService.batchIngestFromSources(topics);
+    const results = await getContentCurationService().batchIngestFromSources(topics);
     
     res.json({
       message: 'Content ingestion completed',
       results,
     });
   } catch (error) {
-    console.error('Error ingesting content:', error);
+    logger.error('Error ingesting content:', error);
     res.status(500).json({ error: 'Failed to ingest content' });
   }
 });
@@ -246,11 +251,11 @@ router.put('/content/:id/verify', async (req: AuthenticatedRequest, res: Respons
     const { id } = req.params;
     const { verified = true } = req.body;
     
-    await contentCurationService.verifyContent(Number(id), verified);
+    await getContentCurationService().verifyContent(Number(id), verified);
     
     res.json({ message: 'Content verification status updated' });
   } catch (error) {
-    console.error('Error verifying content:', error);
+    logger.error('Error verifying content:', error);
     res.status(500).json({ error: 'Failed to verify content' });
   }
 });
@@ -268,7 +273,7 @@ router.post('/content/:id/moderate', async (req: AuthenticatedRequest, res: Resp
     
     res.json({ message: 'Content moderated successfully' });
   } catch (error) {
-    console.error('Error moderating content:', error);
+    logger.error('Error moderating content:', error);
     res.status(500).json({ error: 'Failed to moderate content' });
   }
 });
@@ -276,10 +281,10 @@ router.post('/content/:id/moderate', async (req: AuthenticatedRequest, res: Resp
 // Bias Analysis
 router.get('/bias/ratings', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const ratings = biasRatingService.getAllBiasRatings();
+    const ratings = getBiasRatingService().getAllBiasRatings();
     res.json(ratings);
   } catch (error) {
-    console.error('Error fetching bias ratings:', error);
+    logger.error('Error fetching bias ratings:', error);
     res.status(500).json({ error: 'Failed to fetch bias ratings' });
   }
 });
@@ -289,14 +294,14 @@ router.get('/bias/analysis/:userId', async (req: AuthenticatedRequest, res: Resp
     const { userId } = req.params;
     const { days = 30 } = req.query as any;
     
-    const analysis = await biasRatingService.analyzeUserBias(
+    const analysis = await getBiasRatingService().analyzeUserBias(
       Number(userId), 
       Number(days)
     );
     
     res.json(analysis);
   } catch (error) {
-    console.error('Error analyzing user bias:', error);
+    logger.error('Error analyzing user bias:', error);
     res.status(500).json({ error: 'Failed to analyze user bias' });
   }
 });
@@ -305,7 +310,7 @@ router.post('/bias/source-credibility/:sourceId', async (req: AuthenticatedReque
   try {
     const { sourceId } = req.params;
     
-    const credibilityScore = await biasRatingService.rateSourceCredibility(
+    const credibilityScore = await getBiasRatingService().rateSourceCredibility(
       Number(sourceId)
     );
     
@@ -314,7 +319,7 @@ router.post('/bias/source-credibility/:sourceId', async (req: AuthenticatedReque
       credibilityScore 
     });
   } catch (error) {
-    console.error('Error rating source credibility:', error);
+    logger.error('Error rating source credibility:', error);
     res.status(500).json({ error: 'Failed to rate source credibility' });
   }
 });
@@ -328,7 +333,7 @@ router.get('/stats/overview', async (req: AuthenticatedRequest, res: Response) =
       flaggedContent,
       trendingTopics,
     ] = await Promise.all([
-      contentCurationService.getContentStats(),
+      getContentCurationService().getContentStats(),
       Content.getTotalSourcesCount(),
       Content.getFlaggedContent(5),
       Content.getTrendingTopics(7),
@@ -343,7 +348,7 @@ router.get('/stats/overview', async (req: AuthenticatedRequest, res: Response) =
       trendingTopics: trendingTopics.slice(0, 10),
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logger.error('Error fetching stats:', error);
     res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
@@ -359,7 +364,7 @@ router.get('/stats/content-by-timeframe', async (req: AuthenticatedRequest, res:
       count 
     });
   } catch (error) {
-    console.error('Error fetching content by timeframe:', error);
+    logger.error('Error fetching content by timeframe:', error);
     res.status(500).json({ error: 'Failed to fetch content statistics' });
   }
 });
@@ -373,7 +378,7 @@ router.post('/curate/topic', async (req: AuthenticatedRequest, res: Response) =>
       return res.status(400).json({ error: 'Topic is required' });
     }
     
-    const curatedContent = await contentCurationService.curateContentForTopic(
+    const curatedContent = await getContentCurationService().curateContentForTopic(
       topic,
       { minBiasVariety, maxAge, minArticles }
     );
@@ -381,11 +386,11 @@ router.post('/curate/topic', async (req: AuthenticatedRequest, res: Response) =>
     res.json({
       topic,
       articles: curatedContent,
-      biasDistribution: biasRatingService.getBiasDistribution(curatedContent),
-      isBalanced: biasRatingService.isContentSetBalanced(curatedContent),
+      biasDistribution: getBiasRatingService().getBiasDistribution(curatedContent),
+      isBalanced: getBiasRatingService().isContentSetBalanced(curatedContent),
     });
   } catch (error) {
-    console.error('Error curating content:', error);
+    logger.error('Error curating content:', error);
     res.status(500).json({ error: 'Failed to curate content' });
   }
 });
@@ -393,10 +398,10 @@ router.post('/curate/topic', async (req: AuthenticatedRequest, res: Response) =>
 // Ingestion Scheduler Endpoints
 router.get('/ingestion/status', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const status = await contentIngestionScheduler.getStatus();
+    const status = await getContentIngestionScheduler().getStatus();
     res.json(status);
   } catch (error) {
-    console.error('Error getting ingestion status:', error);
+    logger.error('Error getting ingestion status:', error);
     res.status(500).json({ error: 'Failed to get ingestion status' });
   }
 });
@@ -405,34 +410,34 @@ router.post('/ingestion/run', async (req: AuthenticatedRequest, res: Response) =
   try {
     const { topics } = req.body;
     
-    const result = await contentIngestionScheduler.runIngestion(topics);
+    const result = await getContentIngestionScheduler().runIngestion(topics);
     
     res.json({
       message: 'Ingestion completed',
       result,
     });
   } catch (error) {
-    console.error('Error running ingestion:', error);
+    logger.error('Error running ingestion:', error);
     res.status(500).json({ error: 'Failed to run ingestion' });
   }
 });
 
 router.post('/ingestion/start', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    contentIngestionScheduler.start();
+    getContentIngestionScheduler().start();
     res.json({ message: 'Ingestion scheduler started' });
   } catch (error) {
-    console.error('Error starting scheduler:', error);
+    logger.error('Error starting scheduler:', error);
     res.status(500).json({ error: 'Failed to start scheduler' });
   }
 });
 
 router.post('/ingestion/stop', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    contentIngestionScheduler.stop();
+    getContentIngestionScheduler().stop();
     res.json({ message: 'Ingestion scheduler stopped' });
   } catch (error) {
-    console.error('Error stopping scheduler:', error);
+    logger.error('Error stopping scheduler:', error);
     res.status(500).json({ error: 'Failed to stop scheduler' });
   }
 });
@@ -441,14 +446,14 @@ router.put('/ingestion/config', async (req: AuthenticatedRequest, res: Response)
   try {
     const config = req.body;
     
-    await contentIngestionScheduler.saveConfig(config);
+    await getContentIngestionScheduler().saveConfig(config);
     
     res.json({ 
       message: 'Ingestion configuration updated',
-      config: (await contentIngestionScheduler.getStatus()).config,
+      config: (await getContentIngestionScheduler().getStatus()).config,
     });
   } catch (error) {
-    console.error('Error updating config:', error);
+    logger.error('Error updating config:', error);
     res.status(500).json({ error: 'Failed to update configuration' });
   }
 });

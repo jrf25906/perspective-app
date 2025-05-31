@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
 import * as dotenv from 'dotenv';
+import logger from '../utils/logger';
 import { Command } from 'commander';
-import contentIngestionScheduler from '../services/contentIngestionScheduler';
+import { container, ServiceTokens } from '../di/container';
+import { registerServices } from '../di/serviceRegistration';
+
+// Initialize DI container
+registerServices();
+const contentIngestionScheduler = container.get(ServiceTokens.ContentIngestionScheduler);
 import Content, { BiasRating } from '../models/Content';
 import db from '../db';
 
@@ -27,7 +33,7 @@ program
   .description('Add default news sources to the database')
   .action(async () => {
     try {
-      console.log('Adding default news sources...');
+      logger.info('Adding default news sources...');
       
       const defaultSources = [
         // Left-leaning sources
@@ -64,19 +70,19 @@ program
               is_active: true,
             });
             added++;
-            console.log(`✓ Added ${source.name}`);
+            logger.info(`✓ Added ${source.name}`);
           } else {
-            console.log(`- ${source.name} already exists`);
+            logger.info(`- ${source.name} already exists`);
           }
         } catch (error) {
-          console.error(`✗ Failed to add ${source.name}:`, error);
+          logger.error(`✗ Failed to add ${source.name}:`, error);
         }
       }
       
-      console.log(`\nAdded ${added} new sources`);
+      logger.info(`\nAdded ${added} new sources`);
       process.exit(0);
     } catch (error) {
-      console.error('Error adding sources:', error);
+      logger.error('Error adding sources:', error);
       process.exit(1);
     }
   });
@@ -89,23 +95,23 @@ program
   .action(async (options) => {
     try {
       await init();
-      console.log(`Running ingestion for topics: ${options.topics.join(', ')}`);
+      logger.info(`Running ingestion for topics: ${options.topics.join(', ')}`);
       
       const result = await contentIngestionScheduler.runIngestion(options.topics);
       
-      console.log('\nIngestion Results:');
-      console.log(`- New articles: ${result.ingested}`);
-      console.log(`- Duplicates: ${result.duplicates}`);
-      console.log(`- Failed: ${result.failed}`);
-      console.log(`- Duration: ${result.duration.toFixed(2)}s`);
+      logger.info('\nIngestion Results:');
+      logger.info(`- New articles: ${result.ingested}`);
+      logger.info(`- Duplicates: ${result.duplicates}`);
+      logger.info(`- Failed: ${result.failed}`);
+      logger.info(`- Duration: ${result.duration.toFixed(2)}s`);
       
       if (result.error) {
-        console.error(`- Error: ${result.error}`);
+        logger.error(`- Error: ${result.error}`);
       }
       
       process.exit(0);
     } catch (error) {
-      console.error('Error running ingestion:', error);
+      logger.error('Error running ingestion:', error);
       process.exit(1);
     }
   });
@@ -118,17 +124,17 @@ program
     try {
       await init();
       contentIngestionScheduler.start();
-      console.log('Ingestion scheduler started');
+      logger.info('Ingestion scheduler started');
       
       // Keep the process running
-      console.log('Press Ctrl+C to stop...');
+      logger.info('Press Ctrl+C to stop...');
       process.on('SIGINT', () => {
-        console.log('\nStopping scheduler...');
+        logger.info('\nStopping scheduler...');
         contentIngestionScheduler.stop();
         process.exit(0);
       });
     } catch (error) {
-      console.error('Error starting scheduler:', error);
+      logger.error('Error starting scheduler:', error);
       process.exit(1);
     }
   });
@@ -142,33 +148,33 @@ program
       await init();
       const status = await contentIngestionScheduler.getStatus();
       
-      console.log('\nIngestion Scheduler Status:');
-      console.log(`- Running: ${status.isRunning ? 'Yes' : 'No'}`);
-      console.log(`- Scheduled: ${status.isScheduled ? 'Yes' : 'No'}`);
-      console.log(`- Schedule: ${status.config.schedule}`);
-      console.log(`- Topics: ${status.config.topics.join(', ')}`);
+      logger.info('\nIngestion Scheduler Status:');
+      logger.info(`- Running: ${status.isRunning ? 'Yes' : 'No'}`);
+      logger.info(`- Scheduled: ${status.isScheduled ? 'Yes' : 'No'}`);
+      logger.info(`- Schedule: ${status.config.schedule}`);
+      logger.info(`- Topics: ${status.config.topics.join(', ')}`);
       
       if (status.lastRun) {
-        console.log('\nLast Run:');
-        console.log(`- Time: ${status.lastRun.timestamp}`);
-        console.log(`- Ingested: ${status.lastRun.ingested}`);
-        console.log(`- Duration: ${status.lastRun.duration.toFixed(2)}s`);
+        logger.info('\nLast Run:');
+        logger.info(`- Time: ${status.lastRun.timestamp}`);
+        logger.info(`- Ingested: ${status.lastRun.ingested}`);
+        logger.info(`- Duration: ${status.lastRun.duration.toFixed(2)}s`);
       }
       
       if (status.nextRun) {
-        console.log(`\nNext Run: ${status.nextRun}`);
+        logger.info(`\nNext Run: ${status.nextRun}`);
       }
       
       if (status.recentRuns.length > 0) {
-        console.log('\nRecent Runs:');
+        logger.info('\nRecent Runs:');
         status.recentRuns.slice(0, 5).forEach(run => {
-          console.log(`- ${run.timestamp}: ${run.ingested} articles (${run.duration.toFixed(2)}s)`);
+          logger.info(`- ${run.timestamp}: ${run.ingested} articles (${run.duration.toFixed(2)}s)`);
         });
       }
       
       process.exit(0);
     } catch (error) {
-      console.error('Error getting status:', error);
+      logger.error('Error getting status:', error);
       process.exit(1);
     }
   });
@@ -206,12 +212,12 @@ program
       await contentIngestionScheduler.saveConfig(config);
       
       const status = await contentIngestionScheduler.getStatus();
-      console.log('Configuration updated:');
-      console.log(JSON.stringify(status.config, null, 2));
+      logger.info('Configuration updated:');
+      logger.info(JSON.stringify(status.config, null, 2));
       
       process.exit(0);
     } catch (error) {
-      console.error('Error updating config:', error);
+      logger.error('Error updating config:', error);
       process.exit(1);
     }
   });
@@ -237,18 +243,18 @@ program
         .count('* as count')
         .first();
       
-      console.log('\nContent Statistics:');
-      console.log(`- Active sources: ${sources?.count || 0}`);
-      console.log(`- Articles (last 24h): ${recent?.count || 0}`);
-      console.log('\nContent by Bias:');
+      logger.info('\nContent Statistics:');
+      logger.info(`- Active sources: ${sources?.count || 0}`);
+      logger.info(`- Articles (last 24h): ${recent?.count || 0}`);
+      logger.info('\nContent by Bias:');
       
       stats.forEach(stat => {
-        console.log(`- ${stat.bias_rating}: ${stat.count} articles`);
+        logger.info(`- ${stat.bias_rating}: ${stat.count} articles`);
       });
       
       process.exit(0);
     } catch (error) {
-      console.error('Error getting stats:', error);
+      logger.error('Error getting stats:', error);
       process.exit(1);
     }
   });

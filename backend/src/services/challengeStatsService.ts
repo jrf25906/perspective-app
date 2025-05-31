@@ -274,4 +274,7 @@ export class ChallengeStatsService {
   }
 }
 
-export default new ChallengeStatsService(); 
+// Factory function for DI
+export function createChallengeStatsService(): ChallengeStatsService {
+  return new ChallengeStatsService();
+}

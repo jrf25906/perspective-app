@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import logger from './utils/logger';
 import path from 'path';
 
 // Load environment variables once at the top of the application
@@ -62,7 +63,7 @@ const validateEnvironment = () => {
     if (process.env.NODE_ENV === 'production') {
       errors.push('JWT_SECRET is required in production');
     } else {
-      console.warn('WARNING: JWT_SECRET not set. Using insecure default for development only.');
+      logger.warn('WARNING: JWT_SECRET not set. Using insecure default for development only.');
     }
   }
   

@@ -19,7 +19,7 @@ interface BiasAnalysisResult {
   recommendations: string[];
 }
 
-class BiasRatingService {
+export class BiasRatingService {
   private biasScores: Map<BiasRating, BiasScore>;
 
   constructor() {
@@ -349,4 +349,7 @@ class BiasRatingService {
   }
 }
 
-export default new BiasRatingService(); 
+// Factory function for DI
+export function createBiasRatingService(): BiasRatingService {
+  return new BiasRatingService();
+}

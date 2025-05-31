@@ -230,4 +230,7 @@ export class StreakService {
   }
 }
 
-export default new StreakService(); 
+// Factory function for DI
+export function createStreakService(): StreakService {
+  return new StreakService();
+}

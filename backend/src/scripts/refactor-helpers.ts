@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { promises as fs } from 'fs';
+import logger from '../utils/logger';
 import * as path from 'path';
 import { glob } from 'glob';
 
@@ -117,71 +118,71 @@ async function findDirectServiceImports(): Promise<RefactoringIssue[]> {
 }
 
 async function generateReport(): Promise<void> {
-  console.log(`${colors.blue}=== Refactoring Report ===${colors.reset}\n`);
+  logger.info(`${colors.blue}=== Refactoring Report ===${colors.reset}\n`);
   
   // Find console.log usage
-  console.log(`${colors.yellow}Checking for console.log usage...${colors.reset}`);
+  logger.info(`${colors.yellow}Checking for console.log usage...${colors.reset}`);
   const consoleLogIssues = await findConsoleLogUsage();
   
   if (consoleLogIssues.length > 0) {
-    console.log(`${colors.red}Found ${consoleLogIssues.length} console.log usages:${colors.reset}`);
+    logger.info(`${colors.red}Found ${consoleLogIssues.length} console.log usages:${colors.reset}`);
     consoleLogIssues.slice(0, 10).forEach(issue => {
-      console.log(`  ${issue.file}:${issue.line} - ${issue.issue}`);
+      logger.info(`  ${issue.file}:${issue.line} - ${issue.issue}`);
     });
     if (consoleLogIssues.length > 10) {
-      console.log(`  ... and ${consoleLogIssues.length - 10} more`);
+      logger.info(`  ... and ${consoleLogIssues.length - 10} more`);
     }
   } else {
-    console.log(`${colors.green}✓ No console.log usage found${colors.reset}`);
+    logger.info(`${colors.green}✓ No console.log usage found${colors.reset}`);
   }
   
-  console.log();
+  console.log('');
   
   // Find singleton exports
-  console.log(`${colors.yellow}Checking for singleton exports...${colors.reset}`);
+  logger.info(`${colors.yellow}Checking for singleton exports...${colors.reset}`);
   const singletonIssues = await findSingletonExports();
   
   if (singletonIssues.length > 0) {
-    console.log(`${colors.red}Found ${singletonIssues.length} singleton exports:${colors.reset}`);
+    logger.info(`${colors.red}Found ${singletonIssues.length} singleton exports:${colors.reset}`);
     singletonIssues.forEach(issue => {
-      console.log(`  ${issue.file}:${issue.line} - ${issue.issue}`);
+      logger.info(`  ${issue.file}:${issue.line} - ${issue.issue}`);
     });
   } else {
-    console.log(`${colors.green}✓ No singleton exports found${colors.reset}`);
+    logger.info(`${colors.green}✓ No singleton exports found${colors.reset}`);
   }
   
-  console.log();
+  console.log('');
   
   // Find direct service imports
-  console.log(`${colors.yellow}Checking for direct service imports...${colors.reset}`);
+  logger.info(`${colors.yellow}Checking for direct service imports...${colors.reset}`);
   const importIssues = await findDirectServiceImports();
   
   if (importIssues.length > 0) {
-    console.log(`${colors.red}Found ${importIssues.length} direct service imports:${colors.reset}`);
+    logger.info(`${colors.red}Found ${importIssues.length} direct service imports:${colors.reset}`);
     importIssues.slice(0, 10).forEach(issue => {
-      console.log(`  ${issue.file}:${issue.line} - ${issue.issue}`);
+      logger.info(`  ${issue.file}:${issue.line} - ${issue.issue}`);
     });
     if (importIssues.length > 10) {
-      console.log(`  ... and ${importIssues.length - 10} more`);
+      logger.info(`  ... and ${importIssues.length - 10} more`);
     }
   } else {
-    console.log(`${colors.green}✓ No direct service imports found${colors.reset}`);
+    logger.info(`${colors.green}✓ No direct service imports found${colors.reset}`);
   }
   
-  console.log();
+  console.log('');
   
   // Summary
   const totalIssues = consoleLogIssues.length + singletonIssues.length + importIssues.length;
   if (totalIssues === 0) {
-    console.log(`${colors.green}✨ All refactoring tasks completed!${colors.reset}`);
+    logger.info(`${colors.green}✨ All refactoring tasks completed!${colors.reset}`);
   } else {
-    console.log(`${colors.yellow}Total issues to address: ${totalIssues}${colors.reset}`);
-    console.log('\nNext steps:');
-    console.log('1. Replace console.log with logger imports');
-    console.log('2. Remove singleton exports from services');
-    console.log('3. Update imports to use DI container');
+    logger.info(`${colors.yellow}Total issues to address: ${totalIssues}${colors.reset}`);
+    logger.info('\nNext steps:');
+    logger.info('1. Replace console.log with logger imports');
+    logger.info('2. Remove singleton exports from services');
+    logger.info('3. Update imports to use DI container');
   }
 }
 
 // Run the report
-generateReport().catch(console.error); 
+generateReport().catch((error) => logger.error('Error generating report:', error)); 

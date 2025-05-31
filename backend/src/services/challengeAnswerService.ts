@@ -105,4 +105,7 @@ export class ChallengeAnswerService {
   }
 }
 
-export default new ChallengeAnswerService(); 
+// Factory function for DI
+export function createChallengeAnswerService(): ChallengeAnswerService {
+  return new ChallengeAnswerService();
+}

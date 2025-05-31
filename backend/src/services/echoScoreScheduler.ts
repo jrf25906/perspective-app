@@ -1,4 +1,5 @@
 import { IEchoScoreService, createEchoScoreService } from './echoScoreService';
+import logger from '../utils/logger';
 import db from '../db';
 import { processWithErrors, chunk } from '../utils/concurrentProcessing';
 
@@ -27,7 +28,7 @@ export class EchoScoreScheduler {
 
       // Limit to one calculation per day to avoid excessive calculations
       if (todayScores && Number(todayScores.count) > 0) {
-        console.log(`Echo Score already calculated today for user ${userId}`);
+        logger.info(`Echo Score already calculated today for user ${userId}`);
         return;
       }
 
@@ -39,12 +40,12 @@ export class EchoScoreScheduler {
         .first();
 
       if (todayResponses && Number(todayResponses.count) >= 3) {
-        console.log(`Calculating Echo Score for user ${userId} after ${todayResponses.count} challenges`);
+        logger.info(`Calculating Echo Score for user ${userId} after ${todayResponses.count} challenges`);
         const echoScoreService = this.getEchoScoreService();
         await echoScoreService.calculateAndSaveEchoScore(userId);
       }
     } catch (error) {
-      console.error(`Error in Echo Score calculation after challenge:`, error);
+      logger.error(`Error in Echo Score calculation after challenge:`, error);
     }
   }
 
@@ -72,13 +73,13 @@ export class EchoScoreScheduler {
           .first();
 
         if (todayScores && Number(todayScores.count) === 0) {
-          console.log(`Calculating Echo Score for user ${userId} after reading from ${todaySources.length} sources`);
+          logger.info(`Calculating Echo Score for user ${userId} after reading from ${todaySources.length} sources`);
           const echoScoreService = this.getEchoScoreService();
           await echoScoreService.calculateAndSaveEchoScore(userId);
         }
       }
     } catch (error) {
-      console.error(`Error in Echo Score calculation after reading:`, error);
+      logger.error(`Error in Echo Score calculation after reading:`, error);
     }
   }
 
@@ -104,7 +105,7 @@ export class EchoScoreScheduler {
             .where('score_date', yesterdayStr);
         });
 
-      console.log(`Found ${activeUsers.length} active users without Echo Score for ${yesterdayStr}`);
+      logger.info(`Found ${activeUsers.length} active users without Echo Score for ${yesterdayStr}`);
 
       // Calculate scores concurrently with error handling
       const echoScoreService = this.getEchoScoreService();
@@ -113,14 +114,14 @@ export class EchoScoreScheduler {
         activeUsers,
         async (user) => {
           await echoScoreService.calculateAndSaveEchoScore(user.user_id);
-          console.log(`Calculated Echo Score for user ${user.user_id}`);
+          logger.info(`Calculated Echo Score for user ${user.user_id}`);
           return user.user_id;
         },
         {
           concurrencyLimit: 10, // Process 10 users concurrently to avoid DB overload
           continueOnError: true,
           onError: (error, user) => {
-            console.error(`Failed to calculate Echo Score for user ${user.user_id}:`, error.message);
+            logger.error(`Failed to calculate Echo Score for user ${user.user_id}:`, error.message);
           }
         }
       );
@@ -132,7 +133,7 @@ export class EchoScoreScheduler {
         failedUsers: results.failed.map(f => f.item.user_id)
       };
     } catch (error) {
-      console.error('Error in daily Echo Score calculation:', error);
+      logger.error('Error in daily Echo Score calculation:', error);
       throw error;
     }
   }
@@ -186,7 +187,7 @@ export class EchoScoreScheduler {
         calculated_at: new Date()
       };
     } catch (error) {
-      console.error('Error calculating weekly summary:', error);
+      logger.error('Error calculating weekly summary:', error);
       throw error;
     }
   }
