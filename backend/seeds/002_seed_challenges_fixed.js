@@ -6,8 +6,8 @@ exports.seed = async function(knex) {
   // Deletes ALL existing entries
   await knex('challenges').del();
   
-  // Insert challenge data
-  await knex('challenges').insert([
+  // Insert challenges one by one to avoid batch insert issues
+  const challenges = [
     // Bias Swap Challenges
     {
       type: 'bias_swap',
@@ -57,7 +57,7 @@ exports.seed = async function(knex) {
           { id: 'd', text: 'Slippery slope' }
         ]
       }),
-      correct_answer: 'b',
+      correct_answer: JSON.stringify('b'),
       explanation: 'This is an ad hominem attack - attacking the person making the argument rather than addressing the argument itself. The senator\'s traffic violation has no bearing on the validity of their education proposal.',
       skills_tested: JSON.stringify(['logical reasoning', 'fallacy detection', 'critical thinking']),
       estimated_time_minutes: 3,
@@ -69,10 +69,10 @@ exports.seed = async function(knex) {
       type: 'logic_puzzle',
       difficulty: 'intermediate',
       title: 'The Island of Truth and Lies',
-      description: 'A classic logic puzzle about truth-tellers and liars',
-      instructions: 'You meet two islanders. One always tells the truth, one always lies. Islander A says: "We are both liars." What can you conclude?',
+      description: 'Classic logic puzzle about truth-tellers and liars',
+      instructions: 'Use logical deduction to solve this puzzle.',
       content: JSON.stringify({
-        question: 'Based on Islander A\'s statement, which of the following must be true?',
+        scenario: 'You meet two islanders, A and B. A says: "We are both liars." What can you conclude?',
         options: [
           { id: 'a', text: 'A is the truth-teller and B is the liar' },
           { id: 'b', text: 'A is the liar and B is the truth-teller' },
@@ -80,7 +80,7 @@ exports.seed = async function(knex) {
           { id: 'd', text: 'Both are truth-tellers' }
         ]
       }),
-      correct_answer: 'b',
+      correct_answer: JSON.stringify('b'),
       explanation: 'If A were telling the truth, then both would be liars - but that would make A\'s statement false, creating a contradiction. Therefore, A must be lying, which means they are NOT both liars. Since A is a liar, B must be the truth-teller.',
       skills_tested: JSON.stringify(['logical reasoning', 'deductive reasoning', 'paradox resolution']),
       estimated_time_minutes: 5,
@@ -92,23 +92,24 @@ exports.seed = async function(knex) {
     {
       type: 'data_literacy',
       difficulty: 'beginner',
-      title: 'Misleading Graph Detection',
-      description: 'Can you spot what\'s wrong with this data visualization?',
-      instructions: 'Examine the graph showing company profits. What makes this visualization misleading?',
+      title: 'Misleading Graphs',
+      description: 'Identify how this graph might be misleading',
+      instructions: 'Look at the bar graph below and identify what makes it potentially misleading.',
       content: JSON.stringify({
-        question: 'A bar chart shows Company A with $100M profit and Company B with $110M profit. The Y-axis starts at $95M instead of $0. What\'s the problem?',
+        question: 'A news article shows a bar graph comparing Company A ($100M profit) and Company B ($110M profit). The Y-axis starts at $95M instead of $0. What effect does this have?',
+        graph_description: 'Bar graph with truncated Y-axis making 10% difference appear much larger',
         options: [
-          { id: 'a', text: 'The colors are too similar' },
-          { id: 'b', text: 'The truncated Y-axis exaggerates the difference between companies' },
-          { id: 'c', text: 'The data is from different time periods' },
-          { id: 'd', text: 'There\'s nothing wrong with the graph' }
+          { id: 'a', text: 'It makes the companies look equally profitable' },
+          { id: 'b', text: 'It exaggerates the difference between the companies' },
+          { id: 'c', text: 'It minimizes the difference between the companies' },
+          { id: 'd', text: 'It has no effect on interpretation' }
         ],
         data: {
           chart_type: 'bar',
           misleading_elements: ['truncated_y_axis']
         }
       }),
-      correct_answer: 'b',
+      correct_answer: JSON.stringify('b'),
       explanation: 'By starting the Y-axis at $95M instead of $0, the graph makes a 10% difference look like Company B has more than double the profit of Company A. This is a common technique to exaggerate small differences.',
       skills_tested: JSON.stringify(['data visualization', 'statistical literacy', 'critical analysis']),
       estimated_time_minutes: 3,
@@ -120,12 +121,13 @@ exports.seed = async function(knex) {
     {
       type: 'counter_argument',
       difficulty: 'intermediate',
-      title: 'Steel Man the Opposition',
-      description: 'Practice arguing the strongest version of an opposing view',
-      instructions: 'You believe social media has been harmful to society. Now write the STRONGEST possible argument for why social media has been beneficial. Aim for at least 100 words.',
+      title: 'Social Media and Society',
+      description: 'Construct a thoughtful counter-argument',
+      instructions: 'Read the argument and provide a well-reasoned counter-argument that addresses the main points.',
       content: JSON.stringify({
-        prompt: 'Make the strongest case you can for why social media has been a net positive for society.',
-        reference_material: [
+        original_argument: 'Social media is destroying our society. It spreads misinformation, creates echo chambers, damages mental health, and reduces real human connection. We would be better off without it.',
+        task: 'Write a counter-argument defending the value of social media. Address at least 3 of the points raised.',
+        hints: [
           'Consider: global connectivity, democratization of information, small business opportunities, crisis communication, marginalized voices'
         ]
       }),
@@ -144,13 +146,13 @@ exports.seed = async function(knex) {
     {
       type: 'synthesis',
       difficulty: 'advanced',
-      title: 'Bridging the Divide',
-      description: 'Find common ground between opposing viewpoints',
-      instructions: 'Read these two opposing views on universal basic income (UBI). Write a synthesis that acknowledges valid points from both sides and proposes a middle ground. Aim for 150+ words.',
+      title: 'Universal Basic Income Debate',
+      description: 'Synthesize opposing viewpoints into a nuanced position',
+      instructions: 'Read both arguments about UBI and create a synthesis that acknowledges valid points from both sides.',
       content: JSON.stringify({
-        prompt: 'Synthesize these opposing views on Universal Basic Income',
-        reference_material: [
-          'PRO-UBI: "UBI provides economic security, enables innovation by allowing risk-taking, simplifies welfare systems, and prepares for automation-driven job losses."',
+        title: 'Should governments implement Universal Basic Income?',
+        viewpoints: [
+          'PRO-UBI: "UBI would eliminate poverty, provide economic security, enable innovation and entrepreneurship, and prepare society for automation-driven job losses."',
           'ANTI-UBI: "UBI discourages work, is too expensive, could fuel inflation, and doesn\'t address root causes of poverty like lack of education or healthcare."'
         ]
       }),
@@ -168,12 +170,12 @@ exports.seed = async function(knex) {
     // Ethical Dilemma Challenges
     {
       type: 'ethical_dilemma',
-      difficulty: 'intermediate',
+      difficulty: 'advanced',
       title: 'The Whistleblower\'s Dilemma',
       description: 'Navigate a complex ethical situation with no clear right answer',
-      instructions: 'Consider all stakeholders and ethical principles. What would you do and why? Explain your reasoning in 100+ words.',
+      instructions: 'Consider all stakeholders and potential consequences in your response.',
       content: JSON.stringify({
-        scenario: 'You work at a tech company and discover your team\'s AI product has a bias that discriminates against certain ethnic groups. Your manager knows but says fixing it would delay the launch and hurt quarterly earnings. The board doesn\'t know. You have a family to support and jobs in your field are scarce.',
+        scenario: 'You work for a tech company and discover your team\'s AI product, which is about to launch, has a bias that disadvantages certain ethnic groups in loan applications. Your manager says fixing it would delay the launch by 6 months and could result in layoffs, possibly including yours. You have a family to support. What do you do?',
         stakeholders: ['You and your family', 'Affected ethnic groups', 'Your manager', 'Company shareholders', 'Future users', 'Your colleagues'],
         considerations: ['Personal integrity', 'Family security', 'Harm prevention', 'Loyalty', 'Legal obligations', 'Professional ethics']
       }),
@@ -187,5 +189,17 @@ exports.seed = async function(knex) {
       xp_reward: 90,
       is_active: true
     }
-  ]);
+  ];
+  
+  // Insert challenges one by one
+  for (const challenge of challenges) {
+    try {
+      await knex('challenges').insert(challenge);
+      console.log(`✅ Inserted challenge: ${challenge.title}`);
+    } catch (error) {
+      console.error(`❌ Failed to insert challenge: ${challenge.title}`, error.message);
+    }
+  }
+  
+  console.log('Challenge seeding completed!');
 };

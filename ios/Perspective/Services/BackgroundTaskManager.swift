@@ -90,61 +90,35 @@ class BackgroundSyncOperation: Operation, @unchecked Sendable {
         // Get offline data manager
         let offlineManager = OfflineDataManager.shared
         
-        // Get pending submissions
-        if let pendingSubmissions = offlineManager.getPendingSubmissions() {
-            for submission in pendingSubmissions {
-                guard !isCancelled else { return }
-                
-                // Submit to server
-                let semaphore = DispatchSemaphore(value: 0)
-                
-                APIService.shared.submitChallenge(
-                    challengeId: submission.challengeId,
-                    userAnswer: submission.answer,
-                    timeSpent: submission.timeSpentSeconds
-                )
-                .sink(
-                    receiveCompletion: { completion in
-                        if case .failure(let error) = completion {
-                            print("Failed to sync submission: \(error)")
-                        }
-                        semaphore.signal()
-                    },
-                    receiveValue: { result in
-                        // Mark submission as synced
-                        offlineManager.markSubmissionAsSynced(submission.id)
-                        print("Successfully synced submission for challenge \(submission.challengeId)")
-                        semaphore.signal()
-                    }
-                )
-                .store(in: &OfflineDataManager.shared.cancellables)
-                
-                _ = semaphore.wait(timeout: .now() + 10)
-            }
-        }
+        // TODO: Implement submission syncing when backend supports it
+        // The OfflineDataManager currently stores submissions but doesn't expose
+        // a method to retrieve pending ones. This will be implemented when
+        // the backend adds support for offline submission syncing.
     }
     
     private func updateEchoScores() {
         guard !isCancelled else { return }
         
         let semaphore = DispatchSemaphore(value: 0)
+        var cancellable: AnyCancellable?
         
-        APIService.shared.getEchoScore()
+        cancellable = APIService.shared.getEchoScore()
             .sink(
                 receiveCompletion: { completion in
                     if case .failure(let error) = completion {
                         print("Failed to update echo score: \(error)")
                     }
                     semaphore.signal()
+                    cancellable?.cancel()
                 },
                 receiveValue: { echoScore in
-                    // Cache the updated score
-                    OfflineDataManager.shared.cacheEchoScore(echoScore)
+                    // TODO: Cache the updated score when echo score caching is implemented
+                    // OfflineDataManager.shared.cacheEchoScore(echoScore)
                     print("Echo score updated successfully")
                     semaphore.signal()
+                    cancellable?.cancel()
                 }
             )
-            .store(in: &OfflineDataManager.shared.cancellables)
         
         _ = semaphore.wait(timeout: .now() + 10)
     }
@@ -153,23 +127,25 @@ class BackgroundSyncOperation: Operation, @unchecked Sendable {
         guard !isCancelled else { return }
         
         let semaphore = DispatchSemaphore(value: 0)
+        var cancellable: AnyCancellable?
         
-        APIService.shared.getTodayChallenge()
+        cancellable = APIService.shared.getTodayChallenge()
             .sink(
                 receiveCompletion: { completion in
                     if case .failure(let error) = completion {
                         print("Failed to fetch new challenges: \(error)")
                     }
                     semaphore.signal()
+                    cancellable?.cancel()
                 },
                 receiveValue: { challenge in
                     // Cache the challenge for offline use
                     OfflineDataManager.shared.cacheChallenge(challenge)
                     print("New challenge cached successfully")
                     semaphore.signal()
+                    cancellable?.cancel()
                 }
             )
-            .store(in: &OfflineDataManager.shared.cancellables)
         
         _ = semaphore.wait(timeout: .now() + 10)
     }
@@ -178,22 +154,24 @@ class BackgroundSyncOperation: Operation, @unchecked Sendable {
         guard !isCancelled else { return }
         
         let semaphore = DispatchSemaphore(value: 0)
+        var cancellable: AnyCancellable?
         
-        APIService.shared.getChallengeStats()
+        cancellable = APIService.shared.getChallengeStats()
             .sink(
                 receiveCompletion: { completion in
                     if case .failure(let error) = completion {
                         print("Failed to update user stats: \(error)")
                     }
                     semaphore.signal()
+                    cancellable?.cancel()
                 },
                 receiveValue: { stats in
                     // Cache the stats
                     print("User stats updated: \(stats.totalCompleted) challenges completed")
                     semaphore.signal()
+                    cancellable?.cancel()
                 }
             )
-            .store(in: &OfflineDataManager.shared.cancellables)
         
         _ = semaphore.wait(timeout: .now() + 10)
     }

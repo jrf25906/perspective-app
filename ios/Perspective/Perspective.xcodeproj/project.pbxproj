@@ -44,28 +44,10 @@
 		E7D1848255ADDBFC97F8047F /* Pods-perspective.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-perspective.debug.xcconfig"; path = "Target Support Files/Pods-perspective/Pods-perspective.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		50F257282DE91C4F00FFB1F0 /* Exceptions for "Perspective" folder in "perspective" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 50DF64882DE61E7500A265DC /* perspective */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0C46180934114F628A421DFF /* Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Models;
-			sourceTree = "<group>";
-		};
-		50DF648B2DE61E7500A265DC /* Perspective */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				50F257282DE91C4F00FFB1F0 /* Exceptions for "Perspective" folder in "perspective" target */,
-			);
-			path = Perspective;
 			sourceTree = "<group>";
 		};
 		50DF649E2DE61E7600A265DC /* perspectiveTests */ = {
@@ -136,7 +118,6 @@
 		50DF64802DE61E7500A265DC = {
 			isa = PBXGroup;
 			children = (
-				50DF648B2DE61E7500A265DC /* Perspective */,
 				BE79D5A922D945F295EE45AA /* Services */,
 				71E70F40D753460EB5653E18 /* Views */,
 				0C46180934114F628A421DFF /* Models */,
@@ -192,7 +173,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				0C46180934114F628A421DFF /* Models */,
-				50DF648B2DE61E7500A265DC /* Perspective */,
 				71E70F40D753460EB5653E18 /* Views */,
 				BE79D5A922D945F295EE45AA /* Services */,
 				D1A8D1E184444B59B0A5D17A /* Data */,

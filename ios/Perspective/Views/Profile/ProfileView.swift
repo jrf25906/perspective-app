@@ -398,9 +398,7 @@ class ProfileStatsViewModel: ObservableObject {
                 if let stats = try await apiService.getChallengeStats() {
                     await MainActor.run {
                         self.totalChallenges = stats.totalCompleted
-                        self.accuracy = stats.totalCompleted > 0 
-                            ? (Double(stats.totalCorrect) / Double(stats.totalCompleted)) * 100.0 
-                            : 0.0
+                        self.accuracy = stats.averageAccuracy * 100.0
                     }
                 }
             } catch {

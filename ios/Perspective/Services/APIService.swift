@@ -1,10 +1,10 @@
 import Foundation
 import Combine
 
-class APIService: ObservableObject, APIServiceProtocol {
+class APIService: ObservableObject {
     static let shared = APIService()
     
-    private let baseURL = "http://127.0.0.1:3000/api"
+    private let baseURL: String
     private let networkClient: NetworkClient
     private let requestBuilder: RequestBuilder
     private let authService: AuthenticationService
@@ -12,8 +12,20 @@ class APIService: ObservableObject, APIServiceProtocol {
     
     @Published var isAuthenticated = false
     @Published var currentUser: User?
+    @Published var isOffline = false
     
     private init() {
+        // Configure base URL based on environment
+        #if targetEnvironment(simulator)
+        // Use localhost for simulator - more reliable than 127.0.0.1
+        self.baseURL = ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000/api"
+        #else
+        // Use actual server URL for device
+        self.baseURL = ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:3000/api"
+        #endif
+        
+        print("🔧 APIService initialized with base URL: \(self.baseURL)")
+        
         self.networkClient = NetworkClient()
         self.requestBuilder = RequestBuilder(baseURL: baseURL)
         self.authService = AuthenticationService(baseURL: baseURL)
@@ -25,8 +37,36 @@ class APIService: ObservableObject, APIServiceProtocol {
         authService.$currentUser
             .assign(to: &$currentUser)
         
+        // Monitor network status
+        setupNetworkMonitoring()
+        
+        // Listen for token expiration
+        NotificationCenter.default.publisher(for: .authTokenExpired)
+            .sink { [weak self] _ in
+                self?.handleTokenExpiration()
+            }
+            .store(in: &cancellables)
+        
         // Check for stored token on init
         authService.checkAuthentication()
+    }
+    
+    private func setupNetworkMonitoring() {
+        NetworkMonitor.shared.$isConnected
+            .map { !$0 }
+            .assign(to: &$isOffline)
+    }
+    
+    private func handleTokenExpiration() {
+        // Clear current auth state
+        authService.logout()
+        
+        // TODO: Implement token refresh logic here
+        // For now, just notify the user they need to log in again
+        NotificationCenter.default.post(
+            name: .userNeedsToReauthenticate,
+            object: nil
+        )
     }
     
     // MARK: - Authentication (Delegated to AuthService)
@@ -60,12 +100,26 @@ class APIService: ObservableObject, APIServiceProtocol {
     // MARK: - Challenges
     
     func getTodayChallenge() -> AnyPublisher<Challenge, APIError> {
+        // Check offline cache first if offline
+        if isOffline {
+            if let cachedChallenge = OfflineDataManager.shared.getCachedDailyChallenge() {
+                return Just(cachedChallenge)
+                    .setFailureType(to: APIError.self)
+                    .eraseToAnyPublisher()
+            }
+        }
+        
         return makeAuthenticatedRequest(
             endpoint: "/challenge/today",
             method: .GET,
             body: Optional<String>.none,
             responseType: Challenge.self
         )
+        .handleEvents(receiveOutput: { challenge in
+            // Cache the challenge for offline use
+            OfflineDataManager.shared.cacheDailyChallenge(challenge)
+        })
+        .eraseToAnyPublisher()
     }
     
     func submitChallenge(challengeId: Int, userAnswer: Any, timeSpent: Int) -> AnyPublisher<ChallengeResult, APIError> {
@@ -73,6 +127,27 @@ class APIService: ObservableObject, APIServiceProtocol {
             answer: AnyCodable(userAnswer),
             timeSpentSeconds: timeSpent
         )
+        
+        // Handle offline submission
+        if isOffline {
+            // Queue for later sync
+            OfflineDataManager.shared.queueChallengeSubmission(
+                challengeId: challengeId,
+                submission: submission
+            )
+            
+            // Return optimistic response
+            let optimisticResult = ChallengeResult(
+                isCorrect: false,
+                feedback: "Your answer has been saved and will be submitted when you're back online.",
+                xpEarned: 0,
+                streakInfo: StreakInfo(current: 0, longest: 0, isActive: false)
+            )
+            
+            return Just(optimisticResult)
+                .setFailureType(to: APIError.self)
+                .eraseToAnyPublisher()
+        }
         
         return makeAuthenticatedRequest(
             endpoint: "/challenge/\(challengeId)/submit",
@@ -151,6 +226,14 @@ class APIService: ObservableObject, APIServiceProtocol {
             }
             
             return networkClient.performRequest(request, responseType: responseType)
+                .catch { [weak self] error -> AnyPublisher<U, APIError> in
+                    // Handle specific errors
+                    if case APIError.unauthorized = error {
+                        self?.handleTokenExpiration()
+                    }
+                    return Fail(error: error).eraseToAnyPublisher()
+                }
+                .eraseToAnyPublisher()
         } catch {
             return Fail(error: error as? APIError ?? APIError.encodingError)
                 .eraseToAnyPublisher()
@@ -158,8 +241,11 @@ class APIService: ObservableObject, APIServiceProtocol {
     }
 }
 
-// The following types and extensions have been moved to APIModels.swift
-// Remove them from here to avoid duplication
+// MARK: - Notification Names Extension
+
+extension Notification.Name {
+    static let userNeedsToReauthenticate = Notification.Name("userNeedsToReauthenticate")
+}
 
 // MARK: - Async/Await Extensions
 
@@ -240,16 +326,25 @@ extension APIService {
         return [
             Achievement(
                 id: "first_challenge",
-                name: "First Steps",
+                title: "First Steps",
                 description: "Complete your first challenge",
                 icon: "foot.2",
-                pointValue: 50,
-                isEarned: true,
-                earnedAt: Date(),
                 category: .milestone,
-                requirements: [],
-                rewards: []
+                rarity: .common,
+                requirement: AchievementRequirement(
+                    type: .challengesCompleted,
+                    value: 1,
+                    timeframe: .allTime
+                ),
+                reward: AchievementReward(
+                    type: .echoPoints,
+                    value: 50
+                ),
+                isEarned: true,
+                earnedDate: Date(),
+                progress: 1,
+                maxProgress: 1
             )
         ]
     }
-} 
+}

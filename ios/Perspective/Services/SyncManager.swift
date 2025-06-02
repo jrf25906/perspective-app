@@ -2,6 +2,11 @@ import Foundation
 import Combine
 
 class SyncManager: ObservableObject {
+    static let shared = SyncManager(
+        cacheManager: CacheManager(),
+        apiService: APIService.shared
+    )
+    
     @Published var pendingSyncCount = 0
     
     private let cacheManager: CacheManager

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @State private var isLoginMode = true
+    @State private var showQuickLogin = false
     
     var body: some View {
         NavigationView {
@@ -48,7 +49,20 @@ struct AuthenticationView: View {
                         .font(.footnote)
                         .foregroundColor(.blue)
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 20)
+                
+                // Debug quick login button
+                Button(action: {
+                    showQuickLogin = true
+                }) {
+                    Text("Debug: Quick Login Test")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+                .sheet(isPresented: $showQuickLogin) {
+                    QuickLoginView()
+                }
+                .padding(.bottom, 20)
             }
             .padding(.horizontal, 24)
             .navigationBarHidden(true)

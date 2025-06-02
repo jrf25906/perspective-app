@@ -1,5 +1,4 @@
 import winston from 'winston';
-import config from '../config';
 
 // Define log levels
 const levels = {
@@ -46,10 +45,10 @@ const transports = [
 
 // Create the logger
 const logger = winston.createLogger({
-  level: config.server.environment === 'development' ? 'debug' : 'info',
+  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
   levels,
   format,
   transports,
 });
 
-export default logger; 
+export default logger;

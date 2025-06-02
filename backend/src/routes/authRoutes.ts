@@ -11,5 +11,10 @@ router.post('/google', AuthController.googleSignIn);
 
 // Protected routes
 router.get('/profile', authenticateToken, AuthController.getProfile);
+// Add /me alias for iOS compatibility
+router.get('/me', authenticateToken, AuthController.getProfile);
+
+// Token refresh endpoint - commented out until implemented
+// router.post('/refresh', AuthController.refreshToken);
 
 export default router; 

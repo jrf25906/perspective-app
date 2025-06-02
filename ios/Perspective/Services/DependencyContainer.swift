@@ -25,8 +25,17 @@ class DependencyContainer {
         register(OfflineDataManager.self, service: OfflineDataManager.shared)
         register(BackgroundTaskManager.self, service: BackgroundTaskManager.shared)
         register(NotificationManager.self, service: NotificationManager.shared)
-        register(CacheManager.self, service: CacheManager())
-        register(SyncManager.self, service: SyncManager.shared)
+        
+        // Register CacheManager first
+        let cacheManager = CacheManager()
+        register(CacheManager.self, service: cacheManager)
+        
+        // Register SyncManager with dependencies
+        let syncManager = SyncManager(
+            cacheManager: cacheManager,
+            apiService: APIService.shared
+        )
+        register(SyncManager.self, service: syncManager)
     }
     
     /**

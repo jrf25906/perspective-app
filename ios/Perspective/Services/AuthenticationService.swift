@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import KeychainAccess
 
 class AuthenticationService: ObservableObject {
     @Published var isAuthenticated = false
@@ -7,22 +8,69 @@ class AuthenticationService: ObservableObject {
     
     private let networkClient: NetworkClient
     private let requestBuilder: RequestBuilder
+    private let keychain = Keychain(service: "com.perspective.app")
     private let tokenKey = "auth_token"
+    private let refreshTokenKey = "refresh_token"
+    private let userKey = "current_user"
+    
+    private var cancellables = Set<AnyCancellable>()
     
     init(baseURL: String) {
         self.networkClient = NetworkClient()
         self.requestBuilder = RequestBuilder(baseURL: baseURL)
+        
+        // Load cached user data
+        loadCachedUser()
     }
     
     // MARK: - Token Management
     
     var authToken: String? {
-        get { UserDefaults.standard.string(forKey: tokenKey) }
-        set { 
-            if let token = newValue {
-                UserDefaults.standard.set(token, forKey: tokenKey)
-            } else {
-                UserDefaults.standard.removeObject(forKey: tokenKey)
+        get {
+            do {
+                return try keychain.getString(tokenKey)
+            } catch {
+                print("Error reading auth token from keychain: \(error)")
+                // Fallback to UserDefaults for migration
+                return UserDefaults.standard.string(forKey: tokenKey)
+            }
+        }
+        set {
+            do {
+                if let token = newValue {
+                    try keychain.set(token, key: tokenKey)
+                } else {
+                    try keychain.remove(tokenKey)
+                }
+            } catch {
+                print("Error storing auth token in keychain: \(error)")
+                // Fallback to UserDefaults
+                if let token = newValue {
+                    UserDefaults.standard.set(token, forKey: tokenKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: tokenKey)
+                }
+            }
+        }
+    }
+    
+    var refreshToken: String? {
+        get {
+            do {
+                return try keychain.getString(refreshTokenKey)
+            } catch {
+                return nil
+            }
+        }
+        set {
+            do {
+                if let token = newValue {
+                    try keychain.set(token, key: refreshTokenKey)
+                } else {
+                    try keychain.remove(refreshTokenKey)
+                }
+            } catch {
+                print("Error storing refresh token in keychain: \(error)")
             }
         }
     }
@@ -31,6 +79,25 @@ class AuthenticationService: ObservableObject {
         if authToken != nil {
             // Validate token by fetching profile
             fetchProfile()
+        } else {
+            isAuthenticated = false
+            currentUser = nil
+        }
+    }
+    
+    private func loadCachedUser() {
+        if let userData = UserDefaults.standard.data(forKey: userKey),
+           let user = try? JSONDecoder().decode(User.self, from: userData) {
+            self.currentUser = user
+        }
+    }
+    
+    private func cacheUser(_ user: User?) {
+        if let user = user,
+           let userData = try? JSONEncoder().encode(user) {
+            UserDefaults.standard.set(userData, forKey: userKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: userKey)
         }
     }
     
@@ -60,7 +127,7 @@ class AuthenticationService: ObservableObject {
             
             return networkClient.performRequest(urlRequest, responseType: AuthResponse.self)
                 .handleEvents(receiveOutput: { [weak self] response in
-                    self?.handleAuthSuccess(response)
+                    self?.handleAuthResponse(response)
                 })
                 .eraseToAnyPublisher()
         } catch {
@@ -81,7 +148,7 @@ class AuthenticationService: ObservableObject {
             
             return networkClient.performRequest(urlRequest, responseType: AuthResponse.self)
                 .handleEvents(receiveOutput: { [weak self] response in
-                    self?.handleAuthSuccess(response)
+                    self?.handleAuthResponse(response)
                 })
                 .eraseToAnyPublisher()
         } catch {
@@ -102,7 +169,33 @@ class AuthenticationService: ObservableObject {
             
             return networkClient.performRequest(urlRequest, responseType: AuthResponse.self)
                 .handleEvents(receiveOutput: { [weak self] response in
-                    self?.handleAuthSuccess(response)
+                    self?.handleAuthResponse(response)
+                })
+                .eraseToAnyPublisher()
+        } catch {
+            return Fail(error: error as? APIError ?? APIError.encodingError)
+                .eraseToAnyPublisher()
+        }
+    }
+    
+    func refreshAccessToken() -> AnyPublisher<AuthResponse, APIError> {
+        guard let refreshToken = refreshToken else {
+            return Fail(error: APIError.unauthorized)
+                .eraseToAnyPublisher()
+        }
+        
+        let request = RefreshTokenRequest(refreshToken: refreshToken)
+        
+        do {
+            let urlRequest = try requestBuilder.buildRequest(
+                endpoint: "/auth/refresh",
+                method: .POST,
+                body: request
+            )
+            
+            return networkClient.performRequest(urlRequest, responseType: AuthResponse.self)
+                .handleEvents(receiveOutput: { [weak self] response in
+                    self?.handleAuthResponse(response)
                 })
                 .eraseToAnyPublisher()
         } catch {
@@ -112,54 +205,72 @@ class AuthenticationService: ObservableObject {
     }
     
     func logout() {
+        // Clear tokens
         authToken = nil
-        DispatchQueue.main.async {
-            self.isAuthenticated = false
-            self.currentUser = nil
-        }
+        refreshToken = nil
+        
+        // Clear user data
+        currentUser = nil
+        cacheUser(nil)
+        
+        // Update state
+        isAuthenticated = false
+        
+        // Clear any other cached data
+        UserDefaults.standard.synchronize()
     }
     
     func fetchProfile() {
         guard let token = authToken else {
-            logout()
+            isAuthenticated = false
             return
         }
         
         do {
-            let urlRequest = try requestBuilder.buildRequest(
-                endpoint: "/auth/profile",
+            let request = try requestBuilder.buildRequest(
+                endpoint: "/auth/me",
                 method: .GET,
                 headers: ["Authorization": "Bearer \(token)"]
             )
             
-            _ = networkClient.performRequest(urlRequest, responseType: User.self)
+            networkClient.performRequest(request, responseType: User.self)
                 .sink(
                     receiveCompletion: { [weak self] completion in
-                        if case .failure = completion {
-                            DispatchQueue.main.async {
+                        if case .failure(let error) = completion {
+                            print("Failed to fetch profile: \(error)")
+                            if case APIError.unauthorized = error {
                                 self?.logout()
                             }
                         }
                     },
                     receiveValue: { [weak self] user in
-                        DispatchQueue.main.async {
-                            self?.currentUser = user
-                            self?.isAuthenticated = true
-                        }
+                        self?.currentUser = user
+                        self?.cacheUser(user)
+                        self?.isAuthenticated = true
                     }
                 )
+                .store(in: &cancellables)
         } catch {
-            logout()
+            print("Failed to build profile request: \(error)")
+            isAuthenticated = false
         }
     }
     
     // MARK: - Private Methods
     
-    private func handleAuthSuccess(_ response: AuthResponse) {
+    private func handleAuthResponse(_ response: AuthResponse) {
         authToken = response.token
-        DispatchQueue.main.async {
-            self.currentUser = response.user
-            self.isAuthenticated = true
-        }
+        // TODO: Handle refresh token when backend adds it to response
+        // refreshToken = response.refreshToken
+        currentUser = response.user
+        cacheUser(response.user)
+        isAuthenticated = true
     }
-} 
+}
+
+// MARK: - Request Models
+// Note: RegisterRequest, LoginRequest, and GoogleSignInRequest are defined in User.swift
+
+private struct RefreshTokenRequest: Codable {
+    let refreshToken: String
+}

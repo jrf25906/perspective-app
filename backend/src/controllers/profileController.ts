@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { UserService } from '../services/UserService';
 import { UpdateProfileRequest, ProfileUpdateResponse } from '../models/User';
+import { EchoScoreController } from './echoScoreController';
 
 export class ProfileController {
   static async getProfile(req: AuthenticatedRequest, res: Response) {
@@ -136,12 +137,34 @@ export class ProfileController {
       });
     }
 
+    // Transform to match iOS EchoScore model expectations
+    const echoScoreValue = parseFloat(String(user.echo_score)) || 0.0;
+    
     res.json({
-      echoScore: user.echo_score || 0,
-      lastUpdated: user.updated_at,
-      biasProfile: user.bias_profile
+      id: user.id, // Use user ID as echo score ID for simplicity
+      userId: user.id,
+      totalScore: echoScoreValue,
+      diversityScore: 0.0, // Default values for new users
+      accuracyScore: 0.0,
+      switchSpeedScore: 0.0,
+      consistencyScore: 0.0,
+      improvementScore: 0.0,
+      calculationDetails: {
+        articlesRead: 0,
+        perspectivesExplored: 0,
+        challengesCompleted: 0,
+        accurateAnswers: 0,
+        totalAnswers: 0,
+        averageTimeSpent: 0.0
+      },
+      scoreDate: user.updated_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at
     });
   }
+
+  // Proxy to EchoScoreController.getHistory for iOS compatibility
+  static getEchoScoreHistory = EchoScoreController.getHistory;
 
   static async getProfileStats(req: AuthenticatedRequest, res: Response) {
     const user = await UserService.findById(req.user!.id);

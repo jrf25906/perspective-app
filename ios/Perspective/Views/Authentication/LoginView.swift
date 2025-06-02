@@ -87,7 +87,13 @@ struct LoginView: View {
         isLoading = true
         errorMessage = ""
         
-        apiService.login(email: email, password: password)
+        // Debug: Log what we're sending
+        print("🔐 Attempting login with:")
+        print("   Email: '\(email)'")
+        print("   Password: '\(password)' (length: \(password.count))")
+        
+        apiService.login(email: email.trimmingCharacters(in: .whitespacesAndNewlines), 
+                        password: password.trimmingCharacters(in: .whitespacesAndNewlines))
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { completion in

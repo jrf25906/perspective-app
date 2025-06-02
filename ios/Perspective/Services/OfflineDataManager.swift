@@ -27,19 +27,7 @@ class OfflineDataManager: ObservableObject {
         static let offlineMode = "offline_mode_enabled"
     }
     
-    // MARK: - User Preferences
-    struct UserPreferences: Codable {
-        var notificationsEnabled: Bool = true
-        var dailyChallengeReminder: Bool = true
-        var reminderTime: String = "09:00"
-        var preferredDifficulty: ChallengeDifficulty = .intermediate
-        var autoSyncEnabled: Bool = true
-        var offlineModeEnabled: Bool = false
-        var dataUsageOptimization: Bool = false
-        var biasAlertSensitivity: Double = 0.7
-        var themePreference: String = "system"
-        var language: String = "en"
-    }
+    // UserPreferences is defined via typealias above
     
     // MARK: - Challenge Response Storage
     struct ChallengeResponse: Codable {
@@ -133,6 +121,26 @@ class OfflineDataManager: ObservableObject {
     
     func cacheChallenges(_ challenges: [Challenge]) {
         cacheManager.cacheChallenges(challenges)
+    }
+    
+    // Additional methods for APIService compatibility
+    func getCachedDailyChallenge() -> Challenge? {
+        return getCachedChallenge()
+    }
+    
+    func cacheDailyChallenge(_ challenge: Challenge) {
+        cacheChallenge(challenge)
+    }
+    
+    func queueChallengeSubmission(challengeId: Int, submission: ChallengeSubmission) {
+        // Convert the submission to a format we can store
+        let answer = (submission.answer.value as? String) ?? ""
+        saveChallengeResponse(
+            challengeId: challengeId,
+            userAnswer: answer,
+            timeSpent: submission.timeSpentSeconds,
+            isCorrect: false // Will be determined when synced
+        )
     }
     
     // MARK: - News Article Caching (Delegated)

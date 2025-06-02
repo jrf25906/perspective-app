@@ -10,11 +10,13 @@ import GoogleSignIn
 
 @main
 struct PerspectiveApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     let persistenceController = PersistenceController.shared
     let apiService = APIService.shared
     let appStateManager = AppStateManager.shared
     let networkMonitor = NetworkMonitor.shared
-    @StateObject private var offlineDataManager = OfflineDataManager()
+    @StateObject private var offlineDataManager = OfflineDataManager.shared
 
     init() {
         // Configure Google Sign-In

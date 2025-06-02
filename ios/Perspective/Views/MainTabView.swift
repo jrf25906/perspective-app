@@ -25,6 +25,14 @@ struct MainTabView: View {
                     Text("Profile")
                 }
                 .tag(2)
+            
+            // Always show debug tab for testing
+            APITestView()
+                .tabItem {
+                    Image(systemName: selectedTab == 3 ? "wrench.and.screwdriver.fill" : "wrench.and.screwdriver")
+                    Text("Debug")
+                }
+                .tag(3)
         }
         .accentColor(.blue)
         .preferredColorScheme(.light)

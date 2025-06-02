@@ -37,9 +37,8 @@ export class EchoScoreController {
       days ? parseInt(days as string) : undefined
     );
 
-    res.status(200).json({
-      data: history
-    });
+    // iOS app expects direct array, not wrapped in data object
+    res.status(200).json(history);
   });
 
   /**

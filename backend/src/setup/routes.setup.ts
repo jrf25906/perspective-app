@@ -24,8 +24,8 @@ export function setupHealthCheck(app: Express): void {
 export function setupAPIRoutes(app: Express): void {
   // Main API routes
   app.use('/api/auth', authRoutes);
-  // Expose challenge routes without the /api prefix for simplicity
-  app.use('/challenge', challengeRoutes);
+  // Challenge routes now follow the same /api prefix pattern
+  app.use('/api/challenge', challengeRoutes);
   app.use('/api/profile', profileRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/content', contentRoutes);

@@ -27,13 +27,8 @@ protocol APIServiceProtocol {
     func getEchoScoreHistory(days: Int) -> AnyPublisher<[EchoScoreHistory], APIError>
 }
 
-// Re-export types from APIModels for convenience
-typealias User = AuthResponse.User
-typealias AuthResponse = APIModels.AuthResponse
-typealias APIError = APIModels.APIError
-typealias Challenge = APIModels.Challenge
-typealias ChallengeResult = APIModels.ChallengeResult
-typealias ChallengeStats = APIModels.ChallengeStats
-typealias LeaderboardEntry = APIModels.LeaderboardEntry
-typealias EchoScore = APIModels.EchoScore
-typealias EchoScoreHistory = APIModels.EchoScoreHistory 
+// Note: Types are defined in their respective model files:
+// - User, AuthResponse: User.swift
+// - APIError: APIModels.swift
+// - Challenge, ChallengeResult, ChallengeStats, LeaderboardEntry: Challenge.swift
+// - EchoScore, EchoScoreHistory: EchoScore.swift 

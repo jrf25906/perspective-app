@@ -10,6 +10,103 @@ import { asyncHandler } from '../utils/asyncHandler';
 const getChallengeService = (): IChallengeService => getService(ServiceTokens.ChallengeService);
 const getAdaptiveChallengeService = (): IAdaptiveChallengeService => getService(ServiceTokens.AdaptiveChallengeService);
 
+// Transform leaderboard entry to match iOS app expectations
+function transformLeaderboardForIOS(leaderboard: any[]) {
+  return leaderboard.map(entry => ({
+    id: entry.userId, // Use userId as the id
+    username: entry.username,
+    avatarUrl: null, // TODO: Get avatar URL from user profile
+    challengesCompleted: entry.challengesCompleted,
+    totalXp: entry.score || 0, // Map score to totalXp
+    correctAnswers: Math.round((entry.accuracy / 100) * entry.challengesCompleted) // Calculate from accuracy
+  }));
+}
+
+// Transform challenge stats to match iOS app expectations
+function transformChallengeStatsForIOS(stats: any) {
+  // Calculate average accuracy
+  const averageAccuracy = stats.total_completed > 0 
+    ? (stats.total_correct / stats.total_completed) * 100 
+    : 0.0;
+
+  // Transform type performance to challengesByType format
+  const challengesByType: { [key: string]: number } = {};
+  if (stats.type_performance) {
+    Object.keys(stats.type_performance).forEach(type => {
+      challengesByType[type] = stats.type_performance[type].completed;
+    });
+  }
+
+  return {
+    totalCompleted: stats.total_completed,
+    currentStreak: stats.current_streak,
+    longestStreak: stats.longest_streak,
+    averageAccuracy: averageAccuracy,
+    totalXpEarned: 0, // TODO: Need to calculate from submissions
+    challengesByType: challengesByType,
+    recentActivity: [] // TODO: Need to get recent activity data
+  };
+}
+
+// Transform challenge result to match iOS app expectations
+function transformChallengeResultForIOS(result: any) {
+  return {
+    isCorrect: result.isCorrect,
+    feedback: result.feedback,
+    xpEarned: result.xpEarned,
+    streakInfo: {
+      current: result.streakInfo.currentStreak,
+      longest: result.streakInfo.longestStreak || 0, // Need to get actual longest streak
+      isActive: result.streakInfo.streakMaintained
+    }
+  };
+}
+
+// Transform challenge to match iOS app expectations
+function transformChallengeForIOS(challenge: any) {
+  const difficultyMap: { [key: string]: number } = {
+    'beginner': 1,
+    'intermediate': 2,
+    'advanced': 3
+  };
+
+  // Extract options from content if they exist
+  let options = null;
+  let content = challenge.content;
+  
+  if (typeof content === 'string') {
+    try {
+      content = JSON.parse(content);
+    } catch (e) {
+      console.error('Failed to parse content JSON:', e);
+    }
+  }
+  
+  if (content && content.options) {
+    options = content.options;
+    // Remove options from content since iOS expects them at root level
+    const { options: _, ...contentWithoutOptions } = content;
+    content = contentWithoutOptions;
+  }
+
+  return {
+    id: challenge.id,
+    type: challenge.type,
+    title: challenge.title,
+    prompt: challenge.description, // iOS expects 'prompt' not 'description'
+    content: content,
+    options: options,
+    correctAnswer: null, // Don't expose correct answer to client
+    explanation: challenge.explanation,
+    difficultyLevel: difficultyMap[challenge.difficulty] || 1, // Convert string to int
+    requiredArticles: null, // Not implemented yet
+    isActive: challenge.is_active,
+    createdAt: challenge.created_at,
+    updatedAt: challenge.updated_at,
+    estimatedTimeMinutes: challenge.estimated_time_minutes
+  };
+}
+
 // GET /challenge/today
 export const getTodayChallenge = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id; // Safe to use ! since authRequired middleware ensures this exists
@@ -22,10 +119,10 @@ export const getTodayChallenge = asyncHandler(async (req: AuthenticatedRequest, 
     return;
   }
   
-  // Remove the correct_answer from the response
-  const { correct_answer, ...challengeData } = challenge;
+  // Transform response to match iOS app expectations
+  const transformedChallenge = transformChallengeForIOS(challenge);
   
-  res.json(challengeData);
+  res.json(transformedChallenge);
 });
 
 // GET /challenge/adaptive/next
@@ -40,10 +137,10 @@ export const getAdaptiveChallenge = asyncHandler(async (req: AuthenticatedReques
     return;
   }
   
-  // Remove the correct_answer from the response
-  const { correct_answer, ...challengeData } = challenge;
+  // Transform response to match iOS app expectations
+  const transformedChallenge = transformChallengeForIOS(challenge);
   
-  res.json(challengeData);
+  res.json(transformedChallenge);
 });
 
 // GET /challenge/adaptive/recommendations
@@ -102,7 +199,10 @@ export const submitChallenge = asyncHandler(async (req: AuthenticatedRequest, re
     timeSpentSeconds
   );
   
-  res.json(result);
+  // Transform response to match iOS app expectations
+  const transformedResult = transformChallengeResultForIOS(result);
+  
+  res.json(transformedResult);
 });
 
 // GET /challenge/stats
@@ -112,7 +212,10 @@ export const getChallengeStats = asyncHandler(async (req: AuthenticatedRequest, 
   const challengeService = getChallengeService();
   const stats = await challengeService.getUserChallengeStats(userId);
   
-  res.json(stats);
+  // Transform response to match iOS app expectations
+  const transformedStats = transformChallengeStatsForIOS(stats);
+  
+  res.json(transformedStats);
 });
 
 // GET /challenge/leaderboard
@@ -122,7 +225,10 @@ export const getLeaderboard = asyncHandler(async (req: Request, res: Response) =
   const challengeService = getChallengeService();
   const leaderboard = await challengeService.getLeaderboard(timeframe);
   
-  res.json(leaderboard);
+  // Transform response to match iOS app expectations
+  const transformedLeaderboard = transformLeaderboardForIOS(leaderboard);
+  
+  res.json(transformedLeaderboard);
 });
 
 // GET /challenge/history
