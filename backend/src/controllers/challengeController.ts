@@ -67,43 +67,77 @@ function transformChallengeForIOS(challenge: any) {
   const difficultyMap: { [key: string]: number } = {
     'beginner': 1,
     'intermediate': 2,
-    'advanced': 3
+    'advanced': 3,
+    'expert': 4  // Add expert level
   };
 
   // Extract options from content if they exist
   let options = null;
   let content = challenge.content;
   
-  if (typeof content === 'string') {
+  // Ensure content is an object
+  if (!content) {
+    content = {};
+  } else if (typeof content === 'string') {
     try {
       content = JSON.parse(content);
     } catch (e) {
       console.error('Failed to parse content JSON:', e);
+      // If parsing fails, wrap the string in an object
+      content = { text: content };
     }
   }
   
+  // Handle options extraction
   if (content && content.options) {
     options = content.options;
     // Remove options from content since iOS expects them at root level
     const { options: _, ...contentWithoutOptions } = content;
     content = contentWithoutOptions;
   }
+  
+  // Ensure content has valid structure for iOS
+  const normalizedContent = {
+    text: content.text || null,
+    articles: content.articles || null,
+    visualization: content.visualization || null,
+    questions: content.questions || null,
+    additionalContext: content.additionalContext || null,
+    question: content.question || null,
+    prompt: content.prompt || null,
+    referenceMaterial: content.referenceMaterial || null,
+    scenario: content.scenario || null,
+    stakeholders: content.stakeholders || null,
+    considerations: content.considerations || null
+  };
+
+  // Format dates properly
+  const formatDate = (date: any): string => {
+    if (!date) return new Date().toISOString();
+    if (date instanceof Date) return date.toISOString();
+    if (typeof date === 'string') {
+      // Try to parse and re-format
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+    }
+    return new Date().toISOString();
+  };
 
   return {
     id: challenge.id,
     type: challenge.type,
-    title: challenge.title,
-    prompt: challenge.description, // iOS expects 'prompt' not 'description'
-    content: content,
+    title: challenge.title || 'Untitled Challenge',
+    prompt: challenge.description || challenge.prompt || 'No prompt available',
+    content: normalizedContent,
     options: options,
     correctAnswer: null, // Don't expose correct answer to client
-    explanation: challenge.explanation,
-    difficultyLevel: difficultyMap[challenge.difficulty] || 1, // Convert string to int
+    explanation: challenge.explanation || '',
+    difficultyLevel: difficultyMap[challenge.difficulty] || 1, // Convert string to int with default
     requiredArticles: null, // Not implemented yet
-    isActive: challenge.is_active,
-    createdAt: challenge.created_at,
-    updatedAt: challenge.updated_at,
-    estimatedTimeMinutes: challenge.estimated_time_minutes
+    isActive: challenge.is_active !== false, // Default to true
+    createdAt: formatDate(challenge.created_at),
+    updatedAt: formatDate(challenge.updated_at),
+    estimatedTimeMinutes: challenge.estimated_time_minutes || 5
   };
 }
 
@@ -119,8 +153,22 @@ export const getTodayChallenge = asyncHandler(async (req: AuthenticatedRequest, 
     return;
   }
   
+  // Log the raw challenge data before transformation
+  console.log('🔍 Raw challenge from database:', JSON.stringify(challenge, null, 2));
+  
   // Transform response to match iOS app expectations
   const transformedChallenge = transformChallengeForIOS(challenge);
+  
+  // Log the transformed challenge being sent to iOS
+  console.log('📱 Transformed challenge for iOS:', JSON.stringify(transformedChallenge, null, 2));
+  
+  // Validate critical fields exist
+  const requiredFields = ['id', 'type', 'title', 'prompt', 'content', 'difficultyLevel', 'createdAt', 'updatedAt'];
+  const missingFields = requiredFields.filter(field => transformedChallenge[field] === undefined);
+  
+  if (missingFields.length > 0) {
+    console.error('❌ Missing required fields:', missingFields);
+  }
   
   res.json(transformedChallenge);
 });

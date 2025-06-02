@@ -262,6 +262,8 @@ struct AnyCodable: Codable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
+        
+        // Try decoding in order of likelihood
         if let bool = try? container.decode(Bool.self) {
             value = bool
         } else if let int = try? container.decode(Int.self) {
@@ -270,10 +272,31 @@ struct AnyCodable: Codable {
             value = double
         } else if let string = try? container.decode(String.self) {
             value = string
-        } else {
-            // For arrays and dictionaries, just store as nil for now
-            // to avoid recursive type inference issues
+        } else if let date = try? container.decode(Date.self) {
+            // Handle Date type
+            value = date
+        } else if let array = try? container.decode([AnyCodable].self) {
+            // Handle arrays recursively
+            value = array.map { $0.value }
+        } else if let dict = try? container.decode([String: AnyCodable].self) {
+            // Handle dictionaries recursively
+            var result: [String: Any] = [:]
+            for (key, val) in dict {
+                result[key] = val.value
+            }
+            value = result
+        } else if container.decodeNil() {
+            // Handle explicit null
             value = NSNull()
+        } else {
+            // Fallback
+            throw DecodingError.typeMismatch(
+                AnyCodable.self,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unable to decode AnyCodable"
+                )
+            )
         }
     }
     
@@ -288,6 +311,18 @@ struct AnyCodable: Codable {
             try container.encode(double)
         case let string as String:
             try container.encode(string)
+        case let date as Date:
+            try container.encode(date)
+        case let array as [Any]:
+            try container.encode(array.map { AnyCodable($0) })
+        case let dict as [String: Any]:
+            var encodedDict: [String: AnyCodable] = [:]
+            for (key, val) in dict {
+                encodedDict[key] = AnyCodable(val)
+            }
+            try container.encode(encodedDict)
+        case is NSNull:
+            try container.encodeNil()
         default:
             try container.encodeNil()
         }

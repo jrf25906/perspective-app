@@ -106,9 +106,9 @@ class DailyChallengeViewModel: ObservableObject {
                 feedback: "Your answer has been saved and will be submitted when you're back online.",
                 xpEarned: 0,
                 streakInfo: StreakInfo(
-                    currentStreak: 0,
-                    streakMaintained: true,
-                    isNewRecord: false
+                    current: 0,
+                    longest: 0,
+                    isActive: false
                 )
             )
             self.isCompleted = true
@@ -179,19 +179,43 @@ class MockAPIService: APIServiceProtocol {
     
     func getTodayChallenge() -> AnyPublisher<Challenge, APIError> {
         // Return mock challenge for testing
+        let mockContent = ChallengeContent(
+            text: "This is a test challenge content",
+            articles: nil,
+            visualization: nil,
+            questions: ["What do you think?"],
+            additionalContext: nil,
+            question: "Test question?",
+            options: nil,
+            prompt: "Test prompt",
+            referenceMaterial: nil,
+            scenario: nil,
+            stakeholders: nil,
+            considerations: nil
+        )
+        
+        let mockOptions = [
+            ChallengeOption(id: "A", text: "Option A", isCorrect: true, explanation: "This is correct"),
+            ChallengeOption(id: "B", text: "Option B", isCorrect: false, explanation: nil),
+            ChallengeOption(id: "C", text: "Option C", isCorrect: false, explanation: nil),
+            ChallengeOption(id: "D", text: "Option D", isCorrect: false, explanation: nil)
+        ]
+        
         let mockChallenge = Challenge(
             id: 1,
+            type: .biasSwap,
             title: "Test Challenge",
-            description: "This is a test challenge",
-            type: .multipleChoice,
-            difficulty: .intermediate,
-            topics: ["testing"],
-            options: ["A", "B", "C", "D"],
+            prompt: "This is a test challenge prompt",
+            content: mockContent,
+            options: mockOptions,
             correctAnswer: "A",
             explanation: "Test explanation",
-            xpReward: 100,
+            difficultyLevel: 2,
+            requiredArticles: nil,
+            isActive: true,
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            estimatedTimeMinutes: 5
         )
         return Just(mockChallenge)
             .setFailureType(to: APIError.self)
@@ -205,9 +229,9 @@ class MockAPIService: APIServiceProtocol {
             feedback: "Correct!",
             xpEarned: 100,
             streakInfo: StreakInfo(
-                currentStreak: 1,
-                streakMaintained: true,
-                isNewRecord: false
+                current: 1,
+                longest: 1,
+                isActive: true
             )
         )
         return Just(result)

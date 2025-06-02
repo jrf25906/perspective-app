@@ -115,10 +115,28 @@ class APIService: ObservableObject {
             body: Optional<String>.none,
             responseType: Challenge.self
         )
-        .handleEvents(receiveOutput: { challenge in
-            // Cache the challenge for offline use
-            OfflineDataManager.shared.cacheDailyChallenge(challenge)
-        })
+        .handleEvents(
+            receiveOutput: { challenge in
+                // Cache the challenge for offline use
+                OfflineDataManager.shared.cacheDailyChallenge(challenge)
+                print("✅ Successfully decoded challenge: \(challenge.title)")
+            },
+            receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    print("❌ Challenge loading failed: \(error.localizedDescription)")
+                    
+                    // Additional logging for decoding errors
+                    if case APIError.decodingError = error {
+                        print("❌ This is a decoding error. Check console output for detailed error info.")
+                        print("❌ Common causes:")
+                        print("   - Backend sending different field names than expected")
+                        print("   - Date format mismatch")
+                        print("   - Missing required fields")
+                        print("   - Type mismatches (e.g., string instead of int)")
+                    }
+                }
+            }
+        )
         .eraseToAnyPublisher()
     }
     

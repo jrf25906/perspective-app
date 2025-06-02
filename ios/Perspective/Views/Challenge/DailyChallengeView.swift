@@ -40,6 +40,22 @@ struct DailyChallengeView: View {
                             ChallengeErrorView(error: error) {
                                 viewModel.loadTodayChallenge()
                             }
+                            .onAppear {
+                                // Log detailed error info when error view appears
+                                print("❌ Challenge Error View displayed")
+                                print("❌ Error message: \(error)")
+                                
+                                // Check if it's a decoding error
+                                if error.lowercased().contains("decode") || error.lowercased().contains("failed to decode") {
+                                    print("❌ This appears to be a decoding error")
+                                    print("❌ Common causes:")
+                                    print("   1. Backend response doesn't match iOS Challenge model")
+                                    print("   2. Date format issues")
+                                    print("   3. Missing required fields")
+                                    print("   4. Type mismatches")
+                                    print("❌ Check Xcode console for detailed NetworkClient logs")
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)

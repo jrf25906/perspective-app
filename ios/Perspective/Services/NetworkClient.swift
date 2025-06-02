@@ -62,21 +62,40 @@ class NetworkClient {
                 if let decodingError = error as? DecodingError {
                     print("❌ DECODING FAILED for type: \(responseType)")
                     
-                    // Get the data from the previous response if available
-                    // Note: This is a limitation - we can't access the raw data here directly
-                    // But the logResponse method above already logged it
+                    // Log the request URL for context
+                    print("❌ Request URL: \(request.url?.absoluteString ?? "Unknown")")
+                    
+                    // Special handling for Challenge decoding errors
+                    if String(describing: responseType).contains("Challenge") {
+                        print("❌ Challenge decoding error detected")
+                        
+                        // Try to get the raw response data from earlier in the chain
+                        if let url = request.url?.absoluteString, url.contains("/challenge/today") {
+                            print("❌ Daily challenge endpoint decoding failed")
+                            print("❌ Ensure backend response matches iOS Challenge model:")
+                            print("   - type: ChallengeType enum value")
+                            print("   - content: ChallengeContent object")
+                            print("   - options: [ChallengeOption]? array")
+                            print("   - difficultyLevel: Int (not string)")
+                            print("   - dates use ISO8601 format")
+                        }
+                    }
                     
                     // Log decoding error details
                     switch decodingError {
                     case .keyNotFound(let key, let context):
                         print("❌ Key not found: \(key.stringValue) at \(context.codingPath)")
+                        print("❌ CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " → "))")
                     case .typeMismatch(let type, let context):
                         print("❌ Type mismatch: Expected \(type) at \(context.codingPath)")
                         print("❌ Debug: \(context.debugDescription)")
+                        print("❌ CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " → "))")
                     case .valueNotFound(let type, let context):
                         print("❌ Value not found: \(type) at \(context.codingPath)")
+                        print("❌ CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " → "))")
                     case .dataCorrupted(let context):
                         print("❌ Data corrupted at \(context.codingPath): \(context.debugDescription)")
+                        print("❌ CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " → "))")
                     @unknown default:
                         print("❌ Unknown decoding error: \(String(describing: decodingError))")
                     }
