@@ -98,13 +98,13 @@ struct Challenge: Codable, Identifiable {
     
     private enum CodingKeys: String, CodingKey {
         case id, type, title, prompt, content, options, explanation
-        case correctAnswer = "correct_answer"
-        case difficultyLevel = "difficulty_level"
-        case requiredArticles = "required_articles"
-        case isActive = "is_active"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case estimatedTimeMinutes = "estimated_time_minutes"
+        case correctAnswer
+        case difficultyLevel
+        case requiredArticles
+        case isActive
+        case createdAt
+        case updatedAt
+        case estimatedTimeMinutes
     }
 }
 
@@ -125,9 +125,9 @@ struct ChallengeContent: Codable {
     
     private enum CodingKeys: String, CodingKey {
         case text, articles, visualization, questions
-        case additionalContext = "additional_context"
+        case additionalContext
         case question, options, prompt
-        case referenceMaterial = "reference_material"
+        case referenceMaterial
         case scenario, stakeholders, considerations
     }
 }
@@ -146,9 +146,9 @@ struct NewsReference: Codable, Identifiable {
     
     private enum CodingKeys: String, CodingKey {
         case title, source, url, summary
-        case biasRating = "bias_rating"
-        case publishedAt = "published_at"
-        case biasIndicators = "bias_indicators"
+        case biasRating
+        case publishedAt
+        case biasIndicators
     }
 }
 
@@ -161,7 +161,7 @@ struct ChallengeOption: Codable, Identifiable {
     
     private enum CodingKeys: String, CodingKey {
         case id, text, explanation
-        case isCorrect = "is_correct"
+        case isCorrect
     }
 }
 
@@ -172,9 +172,9 @@ struct DataVisualization: Codable {
     let misleadingElements: [String]?
     
     private enum CodingKeys: String, CodingKey {
-        case chartType = "chart_type"
-        case dataPoints = "data_points"
-        case misleadingElements = "misleading_elements"
+        case chartType
+        case dataPoints
+        case misleadingElements
     }
 }
 
@@ -185,7 +185,7 @@ struct ChallengeSubmission: Codable {
     
     private enum CodingKeys: String, CodingKey {
         case answer
-        case timeSpentSeconds = "time_spent_seconds"
+        case timeSpentSeconds
     }
 }
 
@@ -197,7 +197,7 @@ struct StreakInfo: Codable {
     
     private enum CodingKeys: String, CodingKey {
         case current, longest
-        case isActive = "is_active"
+        case isActive
     }
 }
 
@@ -211,8 +211,8 @@ struct ChallengeResult: Codable {
     private enum CodingKeys: String, CodingKey {
         case isCorrect
         case feedback
-        case xpEarned = "xp_earned"
-        case streakInfo = "streak_info"
+        case xpEarned
+        case streakInfo
     }
 }
 
@@ -227,13 +227,13 @@ struct ChallengeStats: Codable {
     let recentActivity: [ChallengeActivity]
     
     private enum CodingKeys: String, CodingKey {
-        case totalCompleted = "total_completed"
-        case currentStreak = "current_streak"
-        case longestStreak = "longest_streak"
-        case averageAccuracy = "average_accuracy"
-        case totalXpEarned = "total_xp_earned"
-        case challengesByType = "challenges_by_type"
-        case recentActivity = "recent_activity"
+        case totalCompleted
+        case currentStreak
+        case longestStreak
+        case averageAccuracy
+        case totalXpEarned
+        case challengesByType
+        case recentActivity
     }
 }
 
@@ -245,10 +245,10 @@ struct ChallengeActivity: Codable {
     let completedAt: Date
     
     private enum CodingKeys: String, CodingKey {
-        case challengeId = "challenge_id"
+        case challengeId
         case type
-        case isCorrect = "is_correct"
-        case completedAt = "completed_at"
+        case isCorrect
+        case completedAt
     }
 }
 
@@ -346,9 +346,9 @@ struct LeaderboardEntry: Codable, Identifiable {
     private enum CodingKeys: String, CodingKey {
         case id
         case username
-        case avatarUrl = "avatar_url"
-        case challengesCompleted = "challenges_completed"
-        case totalXp = "total_xp"
-        case correctAnswers = "correct_answers"
+        case avatarUrl
+        case challengesCompleted
+        case totalXp
+        case correctAnswers
     }
 }

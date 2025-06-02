@@ -7,6 +7,7 @@ import { serverConfig, isTest, isDevelopment } from '../app-config/server.config
 import { helmetConfig, generalLimiter, authLimiter } from '../app-config/security.config';
 import requestLogger from '../middleware/requestLogger';
 import { validateApiResponse } from '../middleware/validateApiResponse';
+import { camelCaseRequestParser } from '../middleware/camelCaseRequestParser';
 
 export function setupSecurityMiddleware(app: Express): void {
   // Helmet security middleware
@@ -48,6 +49,9 @@ export function setupBodyParsingMiddleware(app: Express): void {
     extended: true, 
     limit: serverConfig.bodyParser.urlencodedLimit 
   }));
+  
+  // Parse camelCase requests from iOS after body parsing
+  app.use(camelCaseRequestParser);
 }
 
 export function setupRequestMiddleware(app: Express): void {

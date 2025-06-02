@@ -23,22 +23,22 @@ struct User: Codable, Identifiable {
     
     enum CodingKeys: String, CodingKey {
         case id, email, username
-        case firstName = "first_name"
-        case lastName = "last_name"
-        case avatarUrl = "avatar_url"
-        case isActive = "is_active"
-        case emailVerified = "email_verified"
-        case echoScore = "echo_score"
-        case biasProfile = "bias_profile"
-        case preferredChallengeTime = "preferred_challenge_time"
-        case currentStreak = "current_streak"
-        case lastActivityDate = "last_activity_date"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case lastLoginAt = "last_login_at"
-        case role = "role"
-        case deletedAt = "deleted_at"
-        case googleId = "google_id"
+        case firstName
+        case lastName
+        case avatarUrl
+        case isActive
+        case emailVerified
+        case echoScore
+        case biasProfile
+        case preferredChallengeTime
+        case currentStreak
+        case lastActivityDate
+        case createdAt
+        case updatedAt
+        case lastLoginAt
+        case role
+        case deletedAt
+        case googleId
     }
     
     init(from decoder: Decoder) throws {
@@ -108,11 +108,11 @@ struct BiasProfile: Codable {
     let assessmentDate: Date
     
     enum CodingKeys: String, CodingKey {
-        case initialAssessmentScore = "initial_assessment_score"
-        case politicalLean = "political_lean"
-        case preferredSources = "preferred_sources"
-        case blindSpots = "blind_spots"
-        case assessmentDate = "assessment_date"
+        case initialAssessmentScore
+        case politicalLean
+        case preferredSources
+        case blindSpots
+        case assessmentDate
     }
 }
 
@@ -135,8 +135,8 @@ struct RegisterRequest: Codable {
     
     enum CodingKeys: String, CodingKey {
         case email, username, password
-        case firstName = "first_name"
-        case lastName = "last_name"
+        case firstName
+        case lastName
     }
 }
 
@@ -144,7 +144,7 @@ struct GoogleSignInRequest: Codable {
     let idToken: String
     
     enum CodingKeys: String, CodingKey {
-        case idToken = "id_token"
+        case idToken
     }
 }
 
