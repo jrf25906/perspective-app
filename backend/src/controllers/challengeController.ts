@@ -6,6 +6,7 @@ import { getService } from '../di/serviceRegistration';
 import { ServiceTokens } from '../di/container';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ChallengeTransformService } from '../services/ChallengeTransformService';
+import { RequestTransformService } from '../services/RequestTransformService';
 
 // Get services from DI container
 const getChallengeService = (): IChallengeService => getService(ServiceTokens.ChallengeService);
@@ -106,18 +107,17 @@ export const submitChallenge = asyncHandler(async (req: AuthenticatedRequest, re
   const userId = req.user!.id;
   const challengeId = Number(req.params.id);
   
+  // Log the request body for debugging (already transformed by middleware)
+  console.log('📥 Challenge submission request:', JSON.stringify(req.body, null, 2));
+  
   // Validate challenge ID
   if (!Number.isInteger(challengeId) || challengeId <= 0) {
     res.status(400).json({ error: 'Invalid challenge ID' });
     return;
   }
   
+  // Body has already been transformed and validated by middleware
   const { answer, timeSpentSeconds } = req.body;
-  
-  if (!answer || timeSpentSeconds === undefined) {
-    res.status(400).json({ error: 'Answer and timeSpentSeconds are required' });
-    return;
-  }
   
   const challengeService = getChallengeService();
   const result = await challengeService.submitChallenge(

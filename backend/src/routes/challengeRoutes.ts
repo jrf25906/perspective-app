@@ -16,24 +16,19 @@ import {
 import { authenticateToken } from "../middleware/auth";
 import { authRequired } from "../middleware/authRequired";
 import { validate, challengeSchemas, commonSchemas } from '../middleware/validation';
+import { transformRequest } from '../middleware/transformRequest';
 import Joi from 'joi';
 
 const router = Router();
 
-// Protected routes (require authentication with automatic 401 response)
-router.get("/today", authenticateToken, authRequired, getTodayChallenge);
-router.get("/adaptive/next", authenticateToken, authRequired, getAdaptiveChallenge);
-router.get("/adaptive/recommendations", authenticateToken, authRequired, getAdaptiveRecommendations);
-router.get("/progress", authenticateToken, authRequired, getUserProgress);
-router.get("/history", authenticateToken, authRequired, getChallengeHistory);
-router.post("/:id/submit", authenticateToken, authRequired, submitChallenge);
-router.get("/stats", authenticateToken, authRequired, getChallengeStats);
-
-// Public routes
+// Public routes (must be defined before authRequired middleware)
 router.get("/leaderboard", getLeaderboard);
 
-// All challenge routes require authentication
+// Apply authentication middleware to all subsequent routes
+router.use(authenticateToken);
 router.use(authRequired);
+
+// Protected routes - all require authentication
 
 // GET /challenge/today - Get today's challenge for the user
 router.get('/today', getTodayChallenge);
@@ -52,6 +47,7 @@ router.get('/progress', getUserProgress);
 
 // POST /challenge/:id/submit - Submit a challenge answer
 router.post('/:id/submit',
+  transformRequest('challengeSubmission'),
   validate({ 
     params: commonSchemas.idParam,
     body: challengeSchemas.submitChallenge 
@@ -62,20 +58,20 @@ router.post('/:id/submit',
 // GET /challenge/stats - Get user's challenge statistics
 router.get('/stats', getChallengeStats);
 
-// GET /challenge/leaderboard - Get leaderboard
-router.get('/leaderboard',
-  validate({ 
-    query: Joi.object({
-      timeframe: Joi.string().valid('daily', 'weekly', 'allTime').optional()
-    })
-  }),
-  getLeaderboard
-);
-
 // GET /challenge/history - Get user's challenge history
 router.get('/history',
   validate({ query: commonSchemas.pagination }),
   getChallengeHistory
+);
+
+// GET /challenge/performance - Get performance analytics
+router.get('/performance',
+  validate({ 
+    query: Joi.object({
+      period: Joi.string().pattern(/^\d+[dwmy]$/).optional() // e.g., 7d, 2w, 1m, 1y
+    })
+  }),
+  getChallengePerformance
 );
 
 // GET /challenge/:id - Get specific challenge details
@@ -97,16 +93,6 @@ router.get('/types/:type',
     })
   }),
   getChallengesByType
-);
-
-// GET /challenge/performance - Get performance analytics
-router.get('/performance',
-  validate({ 
-    query: Joi.object({
-      period: Joi.string().pattern(/^\d+[dwmy]$/).optional() // e.g., 7d, 2w, 1m, 1y
-    })
-  }),
-  getChallengePerformance
 );
 
 // POST /challenge/batch-submit - Submit multiple challenges

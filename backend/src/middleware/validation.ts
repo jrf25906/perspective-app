@@ -10,15 +10,20 @@ export function validate(schema: {
   body?: Joi.Schema;
   query?: Joi.Schema;
   params?: Joi.Schema;
+}, options?: {
+  stripUnknown?: boolean;
 }) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Default to NOT stripping unknown fields to allow transformation
+      const validationOptions = {
+        abortEarly: false,
+        stripUnknown: options?.stripUnknown ?? false // Changed default to false
+      };
+      
       // Validate each part of the request if schema is provided
       if (schema.body) {
-        const { error, value } = schema.body.validate(req.body, {
-          abortEarly: false,
-          stripUnknown: true
-        });
+        const { error, value } = schema.body.validate(req.body, validationOptions);
         
         if (error) {
           logger.warn(`Validation error in body: ${error.message}`);
@@ -35,10 +40,7 @@ export function validate(schema: {
       }
       
       if (schema.query) {
-        const { error, value } = schema.query.validate(req.query, {
-          abortEarly: false,
-          stripUnknown: true
-        });
+        const { error, value } = schema.query.validate(req.query, validationOptions);
         
         if (error) {
           logger.warn(`Validation error in query: ${error.message}`);
@@ -55,10 +57,7 @@ export function validate(schema: {
       }
       
       if (schema.params) {
-        const { error, value } = schema.params.validate(req.params, {
-          abortEarly: false,
-          stripUnknown: true
-        });
+        const { error, value } = schema.params.validate(req.params, validationOptions);
         
         if (error) {
           logger.warn(`Validation error in params: ${error.message}`);
