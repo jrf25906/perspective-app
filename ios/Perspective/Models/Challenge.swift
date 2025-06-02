@@ -116,7 +116,6 @@ struct ChallengeContent: Codable {
     let questions: [String]?
     let additionalContext: AnyCodable?
     let question: String?
-    let options: [ChallengeOption]?
     let prompt: String?
     let referenceMaterial: [String]?
     let scenario: String?
@@ -126,7 +125,7 @@ struct ChallengeContent: Codable {
     private enum CodingKeys: String, CodingKey {
         case text, articles, visualization, questions
         case additionalContext
-        case question, options, prompt
+        case question, prompt
         case referenceMaterial
         case scenario, stakeholders, considerations
     }

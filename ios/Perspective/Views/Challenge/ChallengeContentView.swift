@@ -52,7 +52,7 @@ struct ChallengeContentView: View {
                                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                         }
                         
-                        if let options = challenge.content.options {
+                        if let options = challenge.options {
                             AnswerOptionsView(
                                 options: options,
                                 selectedAnswer: $selectedAnswer
