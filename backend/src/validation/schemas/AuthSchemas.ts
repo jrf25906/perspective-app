@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { BaseSchemas } from './BaseSchemas';
+import { CustomValidationRules } from '../rules/CustomValidationRules';
 
 /**
  * Authentication validation schemas
@@ -18,12 +19,13 @@ export namespace AuthValidation {
   }
 
   export const register = Joi.object<RegisterBody>({
-    email: BaseSchemas.email.required(),
+    email: CustomValidationRules.emailWithDomainRules({
+      allowDisposable: false
+    }).required(),
     username: BaseSchemas.username.required(),
-    password: BaseSchemas.password
+    password: CustomValidationRules.strongPassword()
       .required()
       .messages({
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
         'string.min': 'Password must be at least 8 characters long'
       }),
     firstName: BaseSchemas.shortString
@@ -56,6 +58,18 @@ export namespace AuthValidation {
     password: Joi.string().required(),
     rememberMe: Joi.boolean().optional()
   });
+
+  /**
+   * Login with rate limiting headers
+   */
+  export const loginWithRateLimit = {
+    body: login,
+    headers: Joi.object({
+      'x-forwarded-for': Joi.string().optional(),
+      'x-real-ip': Joi.string().optional(),
+      'user-agent': Joi.string().required()
+    }).unknown(true)
+  };
 
   /**
    * Google Sign-In request body
@@ -99,7 +113,11 @@ export namespace AuthValidation {
       .messages({
         'string.length': 'Invalid reset token'
       }),
-    newPassword: BaseSchemas.password.required()
+    newPassword: CustomValidationRules.strongPassword()
+      .required()
+      .messages({
+        'string.min': 'New password must be at least 8 characters long'
+      })
   });
 
   /**
@@ -112,11 +130,12 @@ export namespace AuthValidation {
 
   export const changePassword = Joi.object<ChangePasswordBody>({
     currentPassword: Joi.string().required(),
-    newPassword: BaseSchemas.password
+    newPassword: CustomValidationRules.strongPassword()
       .required()
       .invalid(Joi.ref('currentPassword'))
       .messages({
-        'any.invalid': 'New password must be different from current password'
+        'any.invalid': 'New password must be different from current password',
+        'string.min': 'New password must be at least 8 characters long'
       })
   });
 
@@ -178,4 +197,82 @@ export namespace AuthValidation {
         'string.pattern.base': 'Code must be 6 digits'
       })
   });
-} 
+
+  /**
+   * Session validation
+   */
+  export interface SessionValidation {
+    sessionId: string;
+    userId: number;
+  }
+
+  export const sessionValidation = Joi.object<SessionValidation>({
+    sessionId: Joi.string()
+      .required()
+      .pattern(/^[a-f0-9]{64}$/i)
+      .messages({
+        'string.pattern.base': 'Invalid session ID format'
+      }),
+    userId: BaseSchemas.id.required()
+  });
+
+  /**
+   * OAuth callback validation
+   */
+  export interface OAuthCallbackQuery {
+    code: string;
+    state: string;
+    error?: string;
+    error_description?: string;
+  }
+
+  export const oauthCallback = Joi.object<OAuthCallbackQuery>({
+    code: Joi.string().when('error', {
+      is: Joi.exist(),
+      then: Joi.optional(),
+      otherwise: Joi.required()
+    }),
+    state: Joi.string().required(),
+    error: Joi.string().optional(),
+    error_description: Joi.string().optional()
+  });
+
+  /**
+   * Logout validation
+   */
+  export interface LogoutBody {
+    everywhere?: boolean;
+  }
+
+  export const logout = Joi.object<LogoutBody>({
+    everywhere: Joi.boolean().optional().default(false)
+  });
+}
+
+/**
+ * Re-export auth validation with enhanced versions
+ */
+export const EnhancedAuthValidation = {
+  ...AuthValidation,
+  
+  // Add transforms for common operations
+  registerWithTransforms: {
+    body: AuthValidation.register.fork(['email', 'username'], (schema) => {
+      // Type guard to ensure we're working with string schema
+      if ('lowercase' in schema && typeof schema.lowercase === 'function' &&
+          'trim' in schema && typeof schema.trim === 'function') {
+        return (schema as Joi.StringSchema).lowercase().trim();
+      }
+      return schema;
+    })
+  },
+  
+  // Add conditional validation
+  loginWithDevice: {
+    body: AuthValidation.login,
+    headers: Joi.object({
+      'user-agent': Joi.string().required(),
+      'x-device-id': Joi.string().optional()
+    }).unknown(true)
+  }
+}; 

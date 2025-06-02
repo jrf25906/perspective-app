@@ -114,13 +114,13 @@ function processFile(filePath: string, content: string): FileResult {
   const { context, module } = detectContext(filePath);
   
   // Parse the file
-  const sourceFile = ts.createSourceFile(
-    filePath,
+      const sourceFile = ts.createSourceFile(
+        filePath,
     content,
-    ts.ScriptTarget.Latest,
-    true
-  );
-  
+        ts.ScriptTarget.Latest,
+        true
+      );
+
   // Visit all nodes in the AST
   function visit(node: ts.Node) {
     if (ts.isCallExpression(node)) {
