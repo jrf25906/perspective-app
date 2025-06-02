@@ -5,6 +5,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { generateToken, AuthenticatedRequest } from '../middleware/auth';
 import { CreateUserRequest, LoginRequest, User } from '../models/User';
 import { UserService } from '../services/UserService';
+import { UserTransformService } from '../services/UserTransformService';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -54,11 +55,14 @@ export class AuthController {
         username: newUser.username
       });
 
-      // Return user without password
-      const { password_hash: _, ...userWithoutPassword } = newUser;
+      // Transform user for API response
+      const transformedUser = UserTransformService.transformUserForAPI(newUser);
+      if (!transformedUser) {
+        throw new Error('Failed to transform user data');
+      }
 
       res.status(201).json({
-        user: userWithoutPassword,
+        user: transformedUser,
         token
       });
 
@@ -161,11 +165,14 @@ export class AuthController {
         username: user.username
       });
 
-      // Return user without password
-      const { password_hash: _, ...userWithoutPassword } = user;
+      // Transform user for API response
+      const transformedUser = UserTransformService.transformUserForAPI(user);
+      if (!transformedUser) {
+        throw new Error('Failed to transform user data');
+      }
 
       res.json({
-        user: userWithoutPassword,
+        user: transformedUser,
         token
       });
 
@@ -236,11 +243,14 @@ export class AuthController {
         username: user.username
       });
 
-      // Return user without password
-      const { password_hash: _, ...userWithoutPassword } = user;
+      // Transform user for API response
+      const transformedUser = UserTransformService.transformUserForAPI(user);
+      if (!transformedUser) {
+        throw new Error('Failed to transform user data');
+      }
 
       res.json({
-        user: userWithoutPassword,
+        user: transformedUser,
         token
       });
 
@@ -276,8 +286,13 @@ export class AuthController {
         });
       }
 
-      const { password_hash: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      // Transform user for API response
+      const transformedUser = UserTransformService.transformUserForAPI(user);
+      if (!transformedUser) {
+        throw new Error('Failed to transform user data');
+      }
+
+      res.json(transformedUser);
 
     } catch (error) {
       logger.error('Get profile error:', error);

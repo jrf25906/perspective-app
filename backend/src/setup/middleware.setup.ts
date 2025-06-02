@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { serverConfig, isTest, isDevelopment } from '../app-config/server.config';
 import { helmetConfig, generalLimiter, authLimiter } from '../app-config/security.config';
 import requestLogger from '../middleware/requestLogger';
+import { validateApiResponse } from '../middleware/validateApiResponse';
 
 export function setupSecurityMiddleware(app: Express): void {
   // Helmet security middleware
@@ -52,6 +53,12 @@ export function setupBodyParsingMiddleware(app: Express): void {
 export function setupRequestMiddleware(app: Express): void {
   // Request ID and timing middleware
   app.use(requestLogger);
+  
+  // API response validation middleware (only in development)
+  if (isDevelopment) {
+    app.use(validateApiResponse);
+    console.log('✅ API response validation middleware enabled');
+  }
 }
 
 export function setupMaintenanceMiddleware(app: Express): void {

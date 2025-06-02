@@ -223,19 +223,28 @@ function validateUserObject(user: any, errors: string[]) {
   if (typeof user.createdAt !== 'string') errors.push('user.createdAt must be an ISO8601 string');
   if (typeof user.updatedAt !== 'string') errors.push('user.updatedAt must be an ISO8601 string');
   
-  // Check snake_case fields
-  const snakeCaseFields = [
-    'first_name', 'last_name', 'avatar_url', 'is_active', 
-    'email_verified', 'echo_score', 'bias_profile', 
-    'preferred_challenge_time', 'current_streak', 
-    'last_activity_date', 'created_at', 'updated_at', 
-    'last_login_at', 'google_id'
-  ];
+  // Check for proper camelCase fields
+  const requiredCamelCase = {
+    firstName: 'first_name',
+    lastName: 'last_name',
+    avatarUrl: 'avatar_url',
+    isActive: 'is_active',
+    emailVerified: 'email_verified',
+    echoScore: 'echo_score',
+    biasProfile: 'bias_profile',
+    preferredChallengeTime: 'preferred_challenge_time',
+    currentStreak: 'current_streak',
+    lastActivityDate: 'last_activity_date',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    lastLoginAt: 'last_login_at',
+    googleId: 'google_id'
+  };
   
-  for (const field of snakeCaseFields) {
-    if (field in user) {
-      const camelCase = field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      console.warn(`⚠️ User object contains snake_case field '${field}' - iOS expects '${camelCase}'`);
+  // Ensure camelCase fields exist and snake_case don't
+  for (const [camelCase, snakeCase] of Object.entries(requiredCamelCase)) {
+    if (snakeCase in user) {
+      errors.push(`user contains snake_case field '${snakeCase}' - should be '${camelCase}'`);
     }
   }
 }
