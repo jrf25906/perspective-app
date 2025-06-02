@@ -21,7 +21,7 @@ export const getTodayChallenge = asyncHandler(async (req: AuthenticatedRequest, 
         return;
     }
     // Log the raw challenge data before transformation
-    logger.info('🔍 Raw challenge from database:', JSON.stringify(challenge, null, 2));
+    logger.info(`🔍 Raw challenge from database: ${JSON.stringify(challenge, null, 2)}`);
     // Transform response to match iOS app expectations
     const transformedChallenge = ChallengeTransformService.transformChallengeForAPI(challenge);
     if (!transformedChallenge) {
@@ -29,7 +29,7 @@ export const getTodayChallenge = asyncHandler(async (req: AuthenticatedRequest, 
         return;
     }
     // Log the transformed challenge being sent to iOS
-    logger.info('📱 Transformed challenge for iOS:', JSON.stringify(transformedChallenge, null, 2));
+    logger.info(`📱 Transformed challenge for iOS: ${JSON.stringify(transformedChallenge, null, 2)}`);
     // Validate critical fields exist
     const requiredFields = ['id', 'type', 'title', 'prompt', 'content', 'difficultyLevel', 'createdAt', 'updatedAt'];
     const missingFields = requiredFields.filter(field => transformedChallenge[field] === undefined);
@@ -83,7 +83,7 @@ export const submitChallenge = asyncHandler(async (req: AuthenticatedRequest, re
     const userId = req.user!.id;
     const challengeId = Number(req.params.id);
     // Log the request body for debugging (already transformed by middleware)
-    logger.info('📥 Challenge submission request:', JSON.stringify(req.body, null, 2));
+    logger.info(`📥 Challenge submission request: ${JSON.stringify(req.body, null, 2)}`);
     // Validate challenge ID
     if (!Number.isInteger(challengeId) || challengeId <= 0) {
         res.status(400).json({ error: 'Invalid challenge ID' });

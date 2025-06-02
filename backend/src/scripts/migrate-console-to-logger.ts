@@ -64,7 +64,7 @@ function detectContext(filePath: string): { context: LogContext; module: string 
   }
 }
 
-/**
+  /**
  * Check if file already imports logger
  */
 function hasLoggerImport(sourceFile: ts.SourceFile): boolean {
@@ -106,9 +106,9 @@ function generateImportStatement(context: LogContext, moduleName: string): strin
   }
 }
 
-/**
+  /**
  * Process a TypeScript source file
- */
+   */
 function processFile(filePath: string, content: string): FileResult {
   const changes: Change[] = [];
   const { context, module } = detectContext(filePath);
@@ -129,7 +129,7 @@ function processFile(filePath: string, content: string): FileResult {
       if (ts.isPropertyAccessExpression(expression)) {
         const object = expression.expression;
         const property = expression.name;
-        
+              
         if (ts.isIdentifier(object) && object.text === 'console') {
           const methodName = property.text;
           const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
@@ -137,7 +137,7 @@ function processFile(filePath: string, content: string): FileResult {
           if (['log', 'error', 'warn', 'debug'].includes(methodName)) {
             const args = node.arguments;
             let replacement = '';
-            
+
             // Map console methods to logger methods
             const loggerMethod = {
               'log': 'info',
@@ -195,11 +195,11 @@ function processFile(filePath: string, content: string): FileResult {
   }
   
   visit(sourceFile);
-  
+    
   return { filePath, changes };
-}
+  }
 
-/**
+  /**
  * Apply changes to file content
  */
 function applyChanges(content: string, changes: Change[], needsImport: boolean, importStatement: string): string {
@@ -234,16 +234,16 @@ function applyChanges(content: string, changes: Change[], needsImport: boolean, 
       } else if (importIndex > 0 && !lines[i].trim()) {
         // Found empty line after imports
         break;
+        }
       }
-    }
     
     lines.splice(importIndex, 0, importStatement, '');
   }
   
   return lines.join('\n');
-}
+  }
 
-/**
+  /**
  * Main migration function
  */
 async function migrate(config: MigrationConfig): Promise<void> {
@@ -262,7 +262,7 @@ async function migrate(config: MigrationConfig): Promise<void> {
   });
   
   logger.info(`Found ${files.length} files to process`);
-  
+    
   const results: FileResult[] = [];
   let totalChanges = 0;
   let filesWithChanges = 0;
@@ -316,7 +316,7 @@ async function migrate(config: MigrationConfig): Promise<void> {
     errors,
     mode: config.dryRun ? 'DRY RUN' : 'APPLIED'
   });
-  
+    
   if (config.dryRun && filesWithChanges > 0) {
     logger.info('Detailed changes by file:');
     results.forEach(result => {
@@ -326,7 +326,7 @@ async function migrate(config: MigrationConfig): Promise<void> {
         logger.debug(`    Original: ${change.original}`);
         logger.debug(`    Replacement: ${change.replacement}`);
       });
-    });
+      });
   }
   
   startTime();

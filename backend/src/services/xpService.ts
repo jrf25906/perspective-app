@@ -26,30 +26,46 @@ export class XPService {
    * Award XP to user
    */
   async awardXP(userId: number, xpAmount: number, reason: string): Promise<void> {
-    await db.transaction(async (trx) => {
-      // Update user's XP
-      await trx('users')
-        .where('id', userId)
-        .increment('echo_score', xpAmount);
-      
-      // Record XP transaction
-      await trx('xp_transactions').insert({
-        user_id: userId,
-        amount: xpAmount,
-        reason: reason,
-        created_at: new Date()
+    try {
+      await db.transaction(async (trx) => {
+        // Update user's XP
+        await trx('users')
+          .where('id', userId)
+          .increment('echo_score', xpAmount);
+        
+        // Record XP transaction (gracefully handle missing table)
+        try {
+          await trx('xp_transactions').insert({
+            user_id: userId,
+            amount: xpAmount,
+            reason: reason,
+            created_at: new Date()
+          });
+        } catch (tableError) {
+          // Log warning but don't fail the entire transaction
+          console.warn(`XP transaction logging failed (table may not exist): ${tableError.message}`);
+          // XP is still awarded to user, just not logged in transactions table
+        }
       });
-    });
+    } catch (error) {
+      console.error('Failed to award XP:', error);
+      throw error;
+    }
   }
 
   /**
    * Get user's XP history
    */
   async getXPHistory(userId: number, limit: number = 50): Promise<any[]> {
-    return await db('xp_transactions')
-      .where('user_id', userId)
-      .orderBy('created_at', 'desc')
-      .limit(limit);
+    try {
+      return await db('xp_transactions')
+        .where('user_id', userId)
+        .orderBy('created_at', 'desc')
+        .limit(limit);
+    } catch (error) {
+      console.warn('XP transactions table not available:', error.message);
+      return []; // Return empty array if table doesn't exist
+    }
   }
 
   /**

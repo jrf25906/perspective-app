@@ -25,7 +25,7 @@ export function validateApiResponse(req: Request, res: Response, next: NextFunct
                 validateChallengeSubmitEndpoint(body);
             }
             else if (endpoint.includes('/auth/')) {
-                validateAuthEndpoint(body);
+                validateAuthEndpoint(body, endpoint);
             }
             else if (endpoint.includes('/profile/echo-score/history')) {
                 validateEchoScoreHistoryEndpoint(body);
@@ -194,9 +194,21 @@ function validateChallengeSubmitEndpoint(body: any) {
         throw new Error(errors.join(', '));
     }
 }
-function validateAuthEndpoint(body: any) {
+function validateAuthEndpoint(body: any, endpoint: string) {
     if (body.error)
         return;
+    
+    // Profile endpoints (/me, /profile) only return user object
+    if (endpoint.includes('/me') || endpoint.includes('/profile')) {
+        const errors: string[] = [];
+        validateUserObject(body, errors);
+        if (errors.length > 0) {
+            throw new Error(errors.join(', '));
+        }
+        return;
+    }
+    
+    // Token-issuing endpoints require both token and user
     const errors: string[] = [];
     if (typeof body.token !== 'string')
         errors.push('token must be a string');

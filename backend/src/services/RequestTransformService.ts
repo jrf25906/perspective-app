@@ -1,43 +1,80 @@
+import logger from '../utils/logger';
+
 /**
  * Service responsible for transforming requests between iOS and backend formats
  * Follows Single Responsibility Principle - only handles request transformation
  */
 export class RequestTransformService {
+  private static readonly DEFAULT_TIME_SPENT = 30; // 30 seconds default
+  
   /**
    * Transform iOS challenge submission to backend format
    * iOS may send the data wrapped in different structures
    */
   static transformChallengeSubmission(body: any): any {
-    // Handle various iOS submission formats
-    if (body.submission) {
-      // iOS might wrap in a submission object
-      return {
-        answer: body.submission.answer,
-        timeSpentSeconds: body.submission.timeSpentSeconds || body.submission.timeSpent
-      };
-    }
+    // Extract answer using multiple strategies
+    const answer = this.extractAnswer(body);
     
-    // Handle direct fields with different naming
-    if (body.userAnswer !== undefined || body.timeSpent !== undefined) {
-      return {
-        answer: body.userAnswer || body.answer,
-        timeSpentSeconds: body.timeSpent || body.timeSpentSeconds
-      };
-    }
+    // Extract time spent using multiple strategies
+    const timeSpentSeconds = this.extractTimeSpent(body);
     
+    return {
+      answer,
+      timeSpentSeconds
+    };
+  }
+  
+  /**
+   * Extract answer from various possible formats
+   */
+  private static extractAnswer(body: any): any {
     // Handle AnyCodable wrapper from iOS
     if (body.answer && typeof body.answer === 'object' && body.answer.value !== undefined) {
-      return {
-        answer: body.answer.value,
-        timeSpentSeconds: body.timeSpentSeconds
-      };
+      return body.answer.value;
     }
     
-    // Return as-is if already in correct format
-    return {
-      answer: body.answer,
-      timeSpentSeconds: body.timeSpentSeconds
-    };
+    // Handle submission wrapper
+    if (body.submission?.answer !== undefined) {
+      return body.submission.answer;
+    }
+    
+    // Handle various field names
+    return body.answer || body.userAnswer || body.selectedOption || body.response;
+  }
+  
+  /**
+   * Extract time spent from various possible formats
+   * Returns default value if not found
+   */
+  private static extractTimeSpent(body: any): number {
+    // Try various field names and locations
+    const possibleValues = [
+      body.timeSpentSeconds,
+      body.timeSpent,
+      body.time_spent,
+      body.submission?.timeSpentSeconds,
+      body.submission?.timeSpent,
+      body.submission?.time_spent,
+      body.duration,
+      body.elapsedTime,
+      body.elapsed_time
+    ];
+    
+    // Find first valid numeric value
+    for (const value of possibleValues) {
+      if (value !== undefined && value !== null) {
+        const parsed = parseInt(value);
+        if (!isNaN(parsed) && parsed >= 0) {
+          return Math.min(parsed, 3600); // Cap at 1 hour
+        }
+      }
+    }
+    
+    // Log when using default value for monitoring
+    logger.warn(`Challenge submission missing time data, using default: ${this.DEFAULT_TIME_SPENT}s`);
+    
+    // Return default if no valid time found
+    return this.DEFAULT_TIME_SPENT;
   }
   
   /**

@@ -161,7 +161,7 @@ export class ContentCurationService {
     // Validate content
     const validation = this.validateContent(contentData);
     if (!validation.isValid) {
-      logger.error('Content validation failed:', validation.errors);
+      logger.error(`Content validation failed: ${JSON.stringify(validation.errors)}`);
       return null;
     }
 
@@ -171,7 +171,7 @@ export class ContentCurationService {
       .first();
 
     if (existingContent) {
-      logger.info('Content already exists:', contentData.url);
+      logger.info(`Content already exists: ${contentData.url}`);
       return existingContent;
     }
 
@@ -278,7 +278,7 @@ export class ContentCurationService {
         concurrencyLimit: 10, // Process 10 articles concurrently
         continueOnError: true,
         onError: (error, article) => {
-          logger.error(`Failed to ingest article "${article.headline}":`, error.message);
+          logger.error(`Failed to ingest article "${article.headline}": ${error.message}`);
         }
       }
     );

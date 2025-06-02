@@ -54,7 +54,7 @@ export function generateAuthToken(user: Pick<TestUser, 'id' | 'email'>): string 
  */
 export async function cleanupTestData(): Promise<void> {
   // Clean up in reverse order of foreign key dependencies
-  await db('user_challenge_submissions').whereRaw("created_at > NOW() - INTERVAL '1 day'").delete();
+  await db('challenge_submissions').whereRaw("created_at > NOW() - INTERVAL '1 day'").delete();
   await db('user_challenge_stats').whereRaw("created_at > NOW() - INTERVAL '1 day'").delete();
   await db('echo_scores').whereRaw("created_at > NOW() - INTERVAL '1 day'").delete();
   await db('user_sessions').whereRaw("created_at > NOW() - INTERVAL '1 day'").delete();
