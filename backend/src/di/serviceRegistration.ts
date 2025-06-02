@@ -13,6 +13,9 @@ import { createBiasRatingService } from '../services/biasRatingService';
 import { createContentCurationService } from '../services/contentCurationService';
 import { createContentIngestionScheduler } from '../services/contentIngestionScheduler';
 import { createNewsIntegrationService } from '../services/newsIntegrationService';
+import { createChallengeActivityRepository } from '../services/challengeActivityRepository';
+import { createStorageService } from '../services/storage/storageFactory';
+import { createAvatarService } from '../services/avatarService';
 
 /**
  * Register all services in the DI container
@@ -24,6 +27,20 @@ export function registerServices(): void {
 
   // Register repositories
   container.register(ServiceTokens.ChallengeRepository, () => createChallengeRepository());
+  container.register(ServiceTokens.ChallengeActivityRepository, () => 
+    createChallengeActivityRepository(container.get(ServiceTokens.Database))
+  );
+
+  // Register storage service
+  container.register(ServiceTokens.StorageService, () => createStorageService());
+
+  // Register avatar service
+  container.register(ServiceTokens.AvatarService, () => 
+    createAvatarService(
+      container.get(ServiceTokens.Database),
+      container.get(ServiceTokens.StorageService)
+    )
+  );
 
   // Register services
   container.register(ServiceTokens.AdaptiveChallengeService, () => createAdaptiveChallengeService());

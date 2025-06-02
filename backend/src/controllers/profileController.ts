@@ -5,6 +5,10 @@ import { UserTransformService } from '../services/UserTransformService';
 import { EchoScoreTransformService } from '../services/EchoScoreTransformService';
 import { UpdateProfileRequest, ProfileUpdateResponse } from '../models/User';
 import { EchoScoreController } from './echoScoreController';
+import { getService } from '../di/serviceRegistration';
+import { ServiceTokens } from '../di/container';
+import { IAvatarService } from '../interfaces/IAvatarService';
+import logger from '../utils/logger';
 
 export class ProfileController {
   static async getProfile(req: AuthenticatedRequest, res: Response) {
@@ -188,16 +192,106 @@ export class ProfileController {
   }
 
   static async uploadAvatar(req: AuthenticatedRequest, res: Response) {
-    // This is a placeholder for avatar upload functionality
-    // In a real implementation, you'd handle file upload with multer or similar
-    // and upload to a storage service like AWS S3
-    
-    res.status(501).json({
-      error: {
-        code: 'NOT_IMPLEMENTED',
-        message: 'Avatar upload not yet implemented'
+    try {
+      // Check if file was uploaded
+      if (!req.file) {
+        return res.status(400).json({
+          error: {
+            code: 'NO_FILE',
+            message: 'No file uploaded'
+          }
+        });
       }
-    });
+
+      // Get avatar service from DI container
+      const avatarService = getService<IAvatarService>(ServiceTokens.AvatarService);
+
+      // Upload and process avatar
+      const avatarUrl = await avatarService.uploadUserAvatar(
+        req.user!.id,
+        req.file
+      );
+
+      // Get updated user
+      const user = await UserService.findById(req.user!.id);
+      if (!user) {
+        return res.status(404).json({
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found'
+          }
+        });
+      }
+
+      // Transform and return updated user
+      const transformedUser = UserTransformService.transformUserForAPI(user);
+      
+      res.json({
+        user: transformedUser,
+        message: 'Avatar uploaded successfully',
+        avatarUrl
+      });
+    } catch (error) {
+      // Handle validation errors
+      if (error.message.includes('File size') || 
+          error.message.includes('Invalid file type') ||
+          error.message.includes('Image must')) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.message
+          }
+        });
+      }
+
+      // Log server errors
+      logger.error('Avatar upload error:', error);
+      
+      res.status(500).json({
+        error: {
+          code: 'UPLOAD_FAILED',
+          message: 'Failed to upload avatar'
+        }
+      });
+    }
+  }
+
+  static async deleteAvatar(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Get avatar service from DI container
+      const avatarService = getService<IAvatarService>(ServiceTokens.AvatarService);
+
+      // Delete avatar
+      await avatarService.deleteUserAvatar(req.user!.id);
+
+      // Get updated user
+      const user = await UserService.findById(req.user!.id);
+      if (!user) {
+        return res.status(404).json({
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found'
+          }
+        });
+      }
+
+      // Transform and return updated user
+      const transformedUser = UserTransformService.transformUserForAPI(user);
+      
+      res.json({
+        user: transformedUser,
+        message: 'Avatar deleted successfully'
+      });
+    } catch (error) {
+      logger.error('Avatar deletion error:', error);
+      
+      res.status(500).json({
+        error: {
+          code: 'DELETE_FAILED',
+          message: 'Failed to delete avatar'
+        }
+      });
+    }
   }
 }
 

@@ -15,14 +15,22 @@ import {
 } from "../controllers/challengeController";
 import { authenticateToken } from "../middleware/auth";
 import { authRequired } from "../middleware/authRequired";
-import { validate, challengeSchemas, commonSchemas } from '../middleware/validation';
 import { transformRequest } from '../middleware/transformRequest';
 import Joi from 'joi';
+import { 
+  validate, 
+  ChallengeValidation, 
+  BaseSchemas,
+  ProfileValidation
+} from '../validation';
 
 const router = Router();
 
 // Public routes (must be defined before authRequired middleware)
-router.get("/leaderboard", getLeaderboard);
+router.get("/leaderboard", 
+  validate({ query: ChallengeValidation.leaderboard }),
+  getLeaderboard
+);
 
 // Apply authentication middleware to all subsequent routes
 router.use(authenticateToken);
@@ -38,7 +46,11 @@ router.get('/adaptive/next', getAdaptiveChallenge);
 
 // GET /challenge/adaptive/recommendations - Get challenge recommendations
 router.get('/adaptive/recommendations', 
-  validate({ query: commonSchemas.pagination.keys({ count: Joi.number().integer().min(1).max(10).optional() }) }),
+  validate({ 
+    query: BaseSchemas.pagination.append({
+      count: Joi.number().integer().min(1).max(10).optional()
+    })
+  }),
   getAdaptiveRecommendations
 );
 
@@ -49,18 +61,21 @@ router.get('/progress', getUserProgress);
 router.post('/:id/submit',
   transformRequest('challengeSubmission'),
   validate({ 
-    params: commonSchemas.idParam,
-    body: challengeSchemas.submitChallenge 
+    params: Joi.object({ id: BaseSchemas.id }),
+    body: ChallengeValidation.submitAnswer
   }),
   submitChallenge
 );
 
 // GET /challenge/stats - Get user's challenge statistics
-router.get('/stats', getChallengeStats);
+router.get('/stats',
+  validate({ query: ChallengeValidation.challengeStats }),
+  getChallengeStats
+);
 
 // GET /challenge/history - Get user's challenge history
 router.get('/history',
-  validate({ query: commonSchemas.pagination }),
+  validate({ query: BaseSchemas.paginatedQuery }),
   getChallengeHistory
 );
 
@@ -76,7 +91,7 @@ router.get('/performance',
 
 // GET /challenge/:id - Get specific challenge details
 router.get('/:id',
-  validate({ params: commonSchemas.idParam }),
+  validate({ params: Joi.object({ id: BaseSchemas.id }) }),
   getChallengeById
 );
 
@@ -84,10 +99,10 @@ router.get('/:id',
 router.get('/types/:type',
   validate({ 
     params: Joi.object({
-      type: Joi.string().required()
+      type: Joi.string().valid(...ChallengeValidation.challengeTypes).required()
     }),
     query: Joi.object({
-      difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').optional(),
+      difficulty: Joi.string().valid(...ChallengeValidation.difficultyLevels).optional(),
       limit: Joi.number().integer().min(1).max(100).default(10),
       offset: Joi.number().integer().min(0).default(0)
     })
@@ -97,22 +112,7 @@ router.get('/types/:type',
 
 // POST /challenge/batch-submit - Submit multiple challenges
 router.post('/batch-submit',
-  validate({ 
-    body: Joi.object({
-      submissions: Joi.array().items(
-        Joi.object({
-          challengeId: Joi.number().integer().positive().required(),
-          answer: Joi.alternatives().try(
-            Joi.string(),
-            Joi.number(),
-            Joi.array(),
-            Joi.object()
-          ).required(),
-          timeSpentSeconds: Joi.number().integer().min(0).required()
-        })
-      ).min(1).max(10).required()
-    })
-  }),
+  validate({ body: ChallengeValidation.batchSubmit }),
   batchSubmitChallenges
 );
 

@@ -1,75 +1,63 @@
-#!/usr/bin/env ts-node
-
+import logger from '../utils/logger';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-
 const colors = {
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  reset: '\x1b[0m'
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    reset: '\x1b[0m'
 };
-
 // Services that need factory functions
 const servicesNeedingFactories = [
-  'challengeRepository',
-  'challengeAnswerService',
-  'xpService',
-  'streakService',
-  'leaderboardService',
-  'challengeStatsService',
-  'biasRatingService',
-  'contentCurationService',
-  'contentIngestionScheduler',
-  'newsIntegrationService'
+    'challengeRepository',
+    'challengeAnswerService',
+    'xpService',
+    'streakService',
+    'leaderboardService',
+    'challengeStatsService',
+    'biasRatingService',
+    'contentCurationService',
+    'contentIngestionScheduler',
+    'newsIntegrationService'
 ];
-
 async function addFactoryFunction(serviceName: string): Promise<boolean> {
-  const fileName = `${serviceName}.ts`;
-  const filePath = path.join(__dirname, '..', 'services', fileName);
-  
-  try {
-    let content = await fs.readFile(filePath, 'utf8');
-    
-    // Check if factory function already exists
-    if (content.includes(`export function create`)) {
-      console.log(`  ${colors.yellow}⚠${colors.reset} Factory function already exists in ${fileName}`);
-      return false;
-    }
-    
-    // Find the class name
-    const classMatch = content.match(/export class (\w+)/);
-    if (!classMatch) {
-      console.log(`  ${colors.red}✗${colors.reset} Could not find class in ${fileName}`);
-      return false;
-    }
-    
-    const className = classMatch[1];
-    
-    // Add factory function at the end
-    const factoryFunction = `
+    const fileName = `${serviceName}.ts`;
+    const filePath = path.join(__dirname, '..', 'services', fileName);
+    try {
+        let content = await fs.readFile(filePath, 'utf8');
+        // Check if factory function already exists
+        if (content.includes(`export function create`)) {
+            logger.info(`  ${colors.yellow}⚠${colors.reset} Factory function already exists in ${fileName}`);
+            return false;
+        }
+        // Find the class name
+        const classMatch = content.match(/export class (\w+)/);
+        if (!classMatch) {
+            logger.info(`  ${colors.red}✗${colors.reset} Could not find class in ${fileName}`);
+            return false;
+        }
+        const className = classMatch[1];
+        // Add factory function at the end
+        const factoryFunction = `
 // Factory function for DI
 export function create${className}(): ${className} {
   return new ${className}();
 }`;
-    
-    // Add before the last closing brace or at the end
-    content = content.trimEnd() + '\n' + factoryFunction;
-    
-    await fs.writeFile(filePath, content);
-    console.log(`  ${colors.green}✓${colors.reset} Added factory function to ${fileName}`);
-    return true;
-  } catch (error) {
-    console.log(`  ${colors.red}✗${colors.reset} Error processing ${fileName}:`, error.message);
-    return false;
-  }
+        // Add before the last closing brace or at the end
+        content = content.trimEnd() + '\n' + factoryFunction;
+        await fs.writeFile(filePath, content);
+        logger.info(`  ${colors.green}✓${colors.reset} Added factory function to ${fileName}`);
+        return true;
+    }
+    catch (error) {
+        logger.info(`  ${colors.red}✗${colors.reset} Error processing ${fileName}:`, error.message);
+        return false;
+    }
 }
-
 async function updateServiceRegistration(): Promise<void> {
-  const filePath = path.join(__dirname, '..', 'di', 'serviceRegistration.ts');
-  
-  const newContent = `import { container, ServiceTokens, ServiceToken } from './container';
+    const filePath = path.join(__dirname, '..', 'di', 'serviceRegistration.ts');
+    const newContent = `import { container, ServiceTokens, ServiceToken } from './container';
 import db from '../db';
 import { createChallengeService } from '../services/challengeService';
 import { createAdaptiveChallengeService } from '../services/adaptiveChallengeService';
@@ -128,63 +116,49 @@ export function registerServices(): void {
 export function getService<T>(token: ServiceToken<T>): T {
   return container.get(token);
 }`;
-
-  await fs.writeFile(filePath, newContent);
-  console.log(`${colors.green}✓ Updated service registration${colors.reset}`);
+    await fs.writeFile(filePath, newContent);
+    logger.info(`${colors.green}✓ Updated service registration${colors.reset}`);
 }
-
 async function fixAutoRefactorScript(): Promise<void> {
-  const filePath = path.join(__dirname, 'auto-refactor.ts');
-  let content = await fs.readFile(filePath, 'utf8');
-  
-  // Add logger import at the top
-  if (!content.includes("import logger")) {
-    const imports = `import { promises as fs } from 'fs';
+    const filePath = path.join(__dirname, 'auto-refactor.ts');
+    let content = await fs.readFile(filePath, 'utf8');
+    // Add logger import at the top
+    if (!content.includes("import logger")) {
+        const imports = `import { promises as fs } from 'fs';
 import * as path from 'path';
 import { glob } from 'glob';
 import logger from '../utils/logger';`;
-    
-    content = content.replace(/import { promises as fs } from 'fs';\nimport \* as path from 'path';\nimport { glob } from 'glob';/, imports);
-    
-    await fs.writeFile(filePath, content);
-    console.log(`${colors.green}✓ Fixed auto-refactor.ts logger import${colors.reset}`);
-  }
-}
-
-async function main() {
-  console.log(`${colors.blue}=== Fixing DI Issues ===${colors.reset}\n`);
-  
-  // Step 1: Add factory functions to services
-  console.log(`${colors.yellow}Step 1: Adding factory functions to services...${colors.reset}`);
-  let factoriesAdded = 0;
-  
-  for (const service of servicesNeedingFactories) {
-    if (await addFactoryFunction(service)) {
-      factoriesAdded++;
+        content = content.replace(/import { promises as fs } from 'fs';\nimport \* as path from 'path';\nimport { glob } from 'glob';/, imports);
+        await fs.writeFile(filePath, content);
+        logger.info(`${colors.green}✓ Fixed auto-refactor.ts logger import${colors.reset}`);
     }
-  }
-  
-  console.log(`${colors.green}Added ${factoriesAdded} factory functions${colors.reset}\n`);
-  
-  // Step 2: Update service registration
-  console.log(`${colors.yellow}Step 2: Updating service registration...${colors.reset}`);
-  await updateServiceRegistration();
-  console.log();
-  
-  // Step 3: Fix auto-refactor script
-  console.log(`${colors.yellow}Step 3: Fixing auto-refactor script...${colors.reset}`);
-  await fixAutoRefactorScript();
-  console.log();
-  
-  console.log(`${colors.blue}=== Summary ===${colors.reset}`);
-  console.log(`${colors.green}✓ Added ${factoriesAdded} factory functions${colors.reset}`);
-  console.log(`${colors.green}✓ Updated service registration${colors.reset}`);
-  console.log(`${colors.green}✓ Fixed auto-refactor script${colors.reset}`);
-  
-  console.log(`\n${colors.yellow}Next steps:${colors.reset}`);
-  console.log('1. Update route files to use DI container instead of direct imports');
-  console.log('2. Update other files that import services directly');
-  console.log('3. Run typecheck again to see remaining issues');
 }
-
-main().catch(console.error); 
+async function main() {
+    logger.info(`${colors.blue}=== Fixing DI Issues ===${colors.reset}\n`);
+    // Step 1: Add factory functions to services
+    logger.info(`${colors.yellow}Step 1: Adding factory functions to services...${colors.reset}`);
+    let factoriesAdded = 0;
+    for (const service of servicesNeedingFactories) {
+        if (await addFactoryFunction(service)) {
+            factoriesAdded++;
+        }
+    }
+    logger.info(`${colors.green}Added ${factoriesAdded} factory functions${colors.reset}\n`);
+    // Step 2: Update service registration
+    logger.info(`${colors.yellow}Step 2: Updating service registration...${colors.reset}`);
+    await updateServiceRegistration();
+    logger.info('');
+    // Step 3: Fix auto-refactor script
+    logger.info(`${colors.yellow}Step 3: Fixing auto-refactor script...${colors.reset}`);
+    await fixAutoRefactorScript();
+    logger.info('');
+    logger.info(`${colors.blue}=== Summary ===${colors.reset}`);
+    logger.info(`${colors.green}✓ Added ${factoriesAdded} factory functions${colors.reset}`);
+    logger.info(`${colors.green}✓ Updated service registration${colors.reset}`);
+    logger.info(`${colors.green}✓ Fixed auto-refactor script${colors.reset}`);
+    logger.info(`\n${colors.yellow}Next steps:${colors.reset}`);
+    logger.info('1. Update route files to use DI container instead of direct imports');
+    logger.info('2. Update other files that import services directly');
+    logger.info('3. Run typecheck again to see remaining issues');
+}
+main().catch(console.error);

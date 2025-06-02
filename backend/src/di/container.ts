@@ -7,6 +7,9 @@ import { ILeaderboardService } from '../interfaces/ILeaderboardService';
 import { IChallengeStatsService } from '../interfaces/IChallengeStatsService';
 import { IChallengeAnswerService } from '../interfaces/IChallengeAnswerService';
 import { IEchoScoreService } from '../services/echoScoreService';
+import { IChallengeActivityRepository } from '../interfaces/IChallengeActivityRepository';
+import { IAvatarService } from '../interfaces/IAvatarService';
+import { IStorageService } from '../interfaces/IStorageService';
 
 /**
  * Service container interface
@@ -126,7 +129,10 @@ export const ServiceTokens = {
   ContentCurationService: createServiceToken<any>('ContentCurationService'),
   ContentIngestionScheduler: createServiceToken<any>('ContentIngestionScheduler'),
   NewsIntegrationService: createServiceToken<any>('NewsIntegrationService'),
-  Database: createServiceToken<any>('Database')
+  Database: createServiceToken<any>('Database'),
+  ChallengeActivityRepository: createServiceToken<IChallengeActivityRepository>('ChallengeActivityRepository'),
+  StorageService: createServiceToken<IStorageService>('StorageService'),
+  AvatarService: createServiceToken<IAvatarService>('AvatarService')
 } as const;
 
 // Export singleton instance

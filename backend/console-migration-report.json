@@ -1,0 +1,432 @@
+[
+  {
+    "filePath": "src/app-config/index.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/app-config/security.config.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/app-config/server.config.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/app.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/config.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/authController.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/challengeController.ts",
+    "replacements": 4,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/diagnosticController.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/echoScoreController.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/networkDiagnosticController.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/controllers/profileController.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/db/index.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/di/container.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/di/serviceRegistration.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/index.d.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IAdaptiveChallengeService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IChallengeAnswerService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IChallengeRepository.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IChallengeService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IChallengeStatsService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/ILeaderboardService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IStreakService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/interfaces/IXPService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/auth.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/authRequired.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/camelCaseRequestParser.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/errorHandler.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/networkDiagnostic.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/requestLogger.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/transformRequest.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/validateApiResponse.ts",
+    "replacements": 4,
+    "errors": []
+  },
+  {
+    "filePath": "src/middleware/validation.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/Challenge.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/Content.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/EchoScore.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/NewsArticle.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/User.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/models/dailyChallenge.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/adminRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/authRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/challengeRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/contentRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/echoScoreRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/networkDiagnosticRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/routes/profileRoutes.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/auto-refactor.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/fix-di-issues.ts",
+    "replacements": 21,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/fix-route-imports.ts",
+    "replacements": 8,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/ingestion-cli.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/refactor-helpers.ts",
+    "replacements": 3,
+    "errors": []
+  },
+  {
+    "filePath": "src/scripts/testAdaptiveChallenges.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/server.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/ChallengeTransformService.ts",
+    "replacements": 2,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/DiagnosticService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/EchoScoreTransformService.ts",
+    "replacements": 2,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/NetworkDiagnosticService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/RequestTransformService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/UserService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/UserTransformService.ts",
+    "replacements": 2,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/adaptiveChallengeService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/biasRatingService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/cacheService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/challengeAnswerService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/challengeRepository.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/challengeService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/challengeStatsService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/contentCurationService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/contentIngestionScheduler.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/echoScoreScheduler.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/echoScoreService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/leaderboardService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/newsIntegrationService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/streakService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/services/xpService.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/setup/index.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/setup/middleware.setup.ts",
+    "replacements": 1,
+    "errors": []
+  },
+  {
+    "filePath": "src/setup/routes.setup.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/setup/scheduler.setup.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/setup/shutdown.setup.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/testUtils/testFactory.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/types/api-contracts.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/types/express.d.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/types/globals.d.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/utils/asyncHandler.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/utils/concurrentProcessing.ts",
+    "replacements": 0,
+    "errors": []
+  },
+  {
+    "filePath": "src/utils/logger.ts",
+    "replacements": 0,
+    "errors": []
+  }
+]
