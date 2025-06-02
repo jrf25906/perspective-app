@@ -24,7 +24,7 @@ export interface ServerSettings {
   port: number;
   environment: 'development' | 'production' | 'test';
   cors: {
-    origin: string | string[];
+    origin: string | string[] | RegExp | (string | RegExp)[];
     credentials: boolean;
     methods: string[];
     allowedHeaders: string[];
@@ -93,10 +93,26 @@ const config: Config = {
     port: parseInt(process.env.PORT || '3000', 10),
     environment: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      origin: (() => {
+        // Support multiple origins for development
+        if (process.env.NODE_ENV === 'development') {
+          return [
+            'http://localhost:3000',        // Web frontend
+            'http://localhost:3001',        // Alternative web port
+            'http://localhost:19006',       // Expo web
+            'http://127.0.0.1:3000',       // Alternative localhost
+            'capacitor://localhost',        // iOS Capacitor
+            'ionic://localhost',            // iOS Ionic
+            /^http:\/\/localhost:\d+$/,     // Any localhost port
+            /^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/ // Local network IPs
+          ];
+        }
+        // Production should use specific allowed origins
+        return process.env.CORS_ORIGIN?.split(',') || '*';
+      })(),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID']
     },
     bodyParser: {
       jsonLimit: '10mb',

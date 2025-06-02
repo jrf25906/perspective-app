@@ -6,6 +6,7 @@ import profileRoutes from '../routes/profileRoutes';
 import adminRoutes from '../routes/adminRoutes';
 import contentRoutes from '../routes/contentRoutes';
 import echoScoreRoutes from '../routes/echoScoreRoutes';
+import networkDiagnosticRoutes from '../routes/networkDiagnosticRoutes';
 import errorHandler from '../middleware/errorHandler';
 
 export function setupHealthCheck(app: Express): void {
@@ -30,6 +31,11 @@ export function setupAPIRoutes(app: Express): void {
   app.use('/api/admin', adminRoutes);
   app.use('/api/content', contentRoutes);
   app.use('/api/echo-score', echoScoreRoutes);
+  
+  // Diagnostic routes (development only)
+  if (serverConfig.environment === 'development') {
+    app.use('/api/diagnostics/network', networkDiagnosticRoutes);
+  }
 }
 
 export function setup404Handler(app: Express): void {

@@ -8,6 +8,7 @@ import { helmetConfig, generalLimiter, authLimiter } from '../app-config/securit
 import requestLogger from '../middleware/requestLogger';
 import { validateApiResponse } from '../middleware/validateApiResponse';
 import { camelCaseRequestParser } from '../middleware/camelCaseRequestParser';
+import { networkDiagnosticMiddleware, corsViolationMiddleware } from '../middleware/networkDiagnostic';
 
 export function setupSecurityMiddleware(app: Express): void {
   // Helmet security middleware
@@ -57,6 +58,12 @@ export function setupBodyParsingMiddleware(app: Express): void {
 export function setupRequestMiddleware(app: Express): void {
   // Request ID and timing middleware
   app.use(requestLogger);
+  
+  // Network diagnostic middleware (before other middleware to catch all requests)
+  app.use(networkDiagnosticMiddleware());
+  
+  // CORS violation tracking (after CORS middleware is applied)
+  app.use(corsViolationMiddleware());
   
   // API response validation middleware (only in development)
   if (isDevelopment) {
