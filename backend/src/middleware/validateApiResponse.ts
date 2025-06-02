@@ -33,6 +33,10 @@ export function validateApiResponse(req: Request, res: Response, next: NextFunct
         validateChallengeSubmitEndpoint(body);
       } else if (endpoint.includes('/auth/')) {
         validateAuthEndpoint(body);
+      } else if (endpoint.includes('/profile/echo-score/history')) {
+        validateEchoScoreHistoryEndpoint(body);
+      } else if (endpoint.includes('/profile/echo-score')) {
+        validateEchoScoreEndpoint(body);
       } else if (endpoint.includes('/profile')) {
         validateUserEndpoint(body);
       }
@@ -247,6 +251,55 @@ function validateUserObject(user: any, errors: string[]) {
       errors.push(`user contains snake_case field '${snakeCase}' - should be '${camelCase}'`);
     }
   }
+}
+
+function validateEchoScoreEndpoint(body: any) {
+  if (body.error) return; // Skip error responses
+  
+  const errors: string[] = [];
+  
+  // Validate echo score structure based on iOS EchoScore model
+  if (typeof body.id !== 'number') errors.push('id must be a number');
+  if (typeof body.userId !== 'number') errors.push('userId must be a number');
+  if (typeof body.totalScore !== 'number') errors.push('totalScore must be a number');
+  if (typeof body.diversityScore !== 'number') errors.push('diversityScore must be a number');
+  if (typeof body.accuracyScore !== 'number') errors.push('accuracyScore must be a number');
+  if (typeof body.switchSpeedScore !== 'number') errors.push('switchSpeedScore must be a number');
+  if (typeof body.consistencyScore !== 'number') errors.push('consistencyScore must be a number');
+  if (typeof body.improvementScore !== 'number') errors.push('improvementScore must be a number');
+  
+  // Validate calculationDetails
+  if (!body.calculationDetails || typeof body.calculationDetails !== 'object') {
+    errors.push('calculationDetails must be an object');
+  } else {
+    const details = body.calculationDetails;
+    if (typeof details.articlesRead !== 'number') errors.push('calculationDetails.articlesRead must be a number');
+    if (typeof details.perspectivesExplored !== 'number') errors.push('calculationDetails.perspectivesExplored must be a number');
+    if (typeof details.challengesCompleted !== 'number') errors.push('calculationDetails.challengesCompleted must be a number');
+    if (typeof details.accurateAnswers !== 'number') errors.push('calculationDetails.accurateAnswers must be a number');
+    if (typeof details.totalAnswers !== 'number') errors.push('calculationDetails.totalAnswers must be a number');
+    if (typeof details.averageTimeSpent !== 'number') errors.push('calculationDetails.averageTimeSpent must be a number');
+  }
+  
+  // Validate dates
+  if (typeof body.scoreDate !== 'string') errors.push('scoreDate must be an ISO8601 string');
+  if (typeof body.createdAt !== 'string') errors.push('createdAt must be an ISO8601 string');
+  if (typeof body.updatedAt !== 'string') errors.push('updatedAt must be an ISO8601 string');
+  
+  if (errors.length > 0) {
+    throw new Error(errors.join(', '));
+  }
+}
+
+function validateEchoScoreHistoryEndpoint(body: any) {
+  if (body.error) return; // Skip error responses
+  
+  if (!Array.isArray(body)) {
+    throw new Error('Echo score history must be an array');
+  }
+  
+  // For now, just validate it's an array
+  // We can add more detailed validation if needed
 }
 
 function isValidChallengeType(type: string): boolean {

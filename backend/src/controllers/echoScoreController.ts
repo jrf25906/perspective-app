@@ -5,6 +5,7 @@ import { IEchoScoreService } from '../services/echoScoreService';
 import { getService } from '../di/serviceRegistration';
 import { ServiceTokens } from '../di/container';
 import { asyncHandler } from '../utils/asyncHandler';
+import { EchoScoreTransformService } from '../services/EchoScoreTransformService';
 
 // Get service from DI container
 const getEchoScoreService = (): IEchoScoreService => getService(ServiceTokens.EchoScoreService);
@@ -37,8 +38,11 @@ export class EchoScoreController {
       days ? parseInt(days as string) : undefined
     );
 
+    // Transform history for iOS format
+    const transformedHistory = EchoScoreTransformService.transformEchoScoreHistory(history);
+    
     // iOS app expects direct array, not wrapped in data object
-    res.status(200).json(history);
+    res.status(200).json(transformedHistory);
   });
 
   /**

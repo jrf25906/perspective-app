@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { UserService } from '../services/UserService';
 import { UserTransformService } from '../services/UserTransformService';
+import { EchoScoreTransformService } from '../services/EchoScoreTransformService';
 import { UpdateProfileRequest, ProfileUpdateResponse } from '../models/User';
 import { EchoScoreController } from './echoScoreController';
 
@@ -144,30 +145,19 @@ export class ProfileController {
       });
     }
 
-    // Transform to match iOS EchoScore model expectations
-    const echoScoreValue = parseFloat(String(user.echo_score)) || 0.0;
+    // Transform user to echo score response
+    const echoScoreResponse = EchoScoreTransformService.transformUserToEchoScore(user);
     
-    res.json({
-      id: user.id, // Use user ID as echo score ID for simplicity
-      userId: user.id,
-      totalScore: echoScoreValue,
-      diversityScore: 0.0, // Default values for new users
-      accuracyScore: 0.0,
-      switchSpeedScore: 0.0,
-      consistencyScore: 0.0,
-      improvementScore: 0.0,
-      calculationDetails: {
-        articlesRead: 0,
-        perspectivesExplored: 0,
-        challengesCompleted: 0,
-        accurateAnswers: 0,
-        totalAnswers: 0,
-        averageTimeSpent: 0.0
-      },
-      scoreDate: user.updated_at,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at
-    });
+    if (!echoScoreResponse) {
+      return res.status(500).json({
+        error: {
+          code: 'TRANSFORM_ERROR',
+          message: 'Failed to transform echo score data'
+        }
+      });
+    }
+    
+    res.json(echoScoreResponse);
   }
 
   // Proxy to EchoScoreController.getHistory for iOS compatibility
