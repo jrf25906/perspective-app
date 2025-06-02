@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { UserService } from '../services/UserService';
+import { UserTransformService } from '../services/UserTransformService';
 import { UpdateProfileRequest, ProfileUpdateResponse } from '../models/User';
 import { EchoScoreController } from './echoScoreController';
 
@@ -16,10 +17,13 @@ export class ProfileController {
       });
     }
 
-    // Remove sensitive data
-    const { password_hash: _, ...userWithoutPassword } = user;
+    // Transform user for API response
+    const transformedUser = UserTransformService.transformUserForAPI(user);
+    if (!transformedUser) {
+      throw new Error('Failed to transform user data');
+    }
     
-    res.json(userWithoutPassword);
+    res.json(transformedUser);
   }
 
   static async updateProfile(req: AuthenticatedRequest, res: Response) {
@@ -115,11 +119,14 @@ export class ProfileController {
     // Update the user profile
     const updatedUser = await UserService.updateProfile(userId, updateData);
     
-    // Remove sensitive data
-    const { password_hash: _, ...userWithoutPassword } = updatedUser;
+    // Transform user for API response
+    const transformedUser = UserTransformService.transformUserForAPI(updatedUser);
+    if (!transformedUser) {
+      throw new Error('Failed to transform user data');
+    }
 
     const response: ProfileUpdateResponse = {
-      user: userWithoutPassword,
+      user: transformedUser,
       message: 'Profile updated successfully'
     };
 

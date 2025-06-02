@@ -54,6 +54,6 @@ export interface UpdateProfileRequest {
 }
 
 export interface ProfileUpdateResponse {
-  user: Omit<User, 'password_hash'>;
+  user: any;
   message: string;
 } 
