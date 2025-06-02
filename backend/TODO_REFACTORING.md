@@ -21,31 +21,55 @@
 - Applied to challenge routes as example
 - Created reusable validation schemas
 
+### 5. Remove Singleton Exports ✅ COMPLETED (June 2, 2025)
+- All 11 services refactored to use factory functions
+- Proper DI container implementation with type-safe tokens
+- Service registration centralized in serviceRegistration.ts
+- All services now properly injected via container.get()
+
+**Refactored services:**
+- challengeAnswerService.ts ✅
+- leaderboardService.ts ✅
+- contentCurationService.ts ✅
+- streakService.ts ✅
+- biasRatingService.ts ✅
+- xpService.ts ✅
+- newsIntegrationService.ts ✅
+- contentIngestionScheduler.ts ✅
+- challengeStatsService.ts ✅
+- adaptiveChallengeService.ts ✅
+- challengeRepository.ts ✅
+
+### 6. Enhanced Logger Infrastructure ✅ COMPLETED (June 2, 2025)
+- Created context-aware logging system with LogContext enum
+- Implemented EnhancedLogger with metadata support
+- Built LoggerFactory for creating specialized loggers
+- Added structured metadata interfaces (Request, Performance, Error, etc.)
+- Implemented data sanitization for sensitive information
+- Created automated migration script with AST parsing
+
+**Logger Components:**
+- `LoggerContext.ts` - Context enumeration and utilities
+- `LogMetadata.ts` - Structured metadata interfaces
+- `EnhancedLogger.ts` - Enhanced logger with child logger support
+- `LoggerFactory.ts` - Factory for creating context-aware loggers
+- `migrate-console-to-logger.ts` - Automated migration script
+
 ## 🚧 In Progress Tasks
 
-### 1. Remove Singleton Exports (11 services affected)
-```bash
-# Run helper script to see current status
-npm run ts-node src/scripts/refactor-helpers.ts
-```
-
-**Files to update:**
-- challengeAnswerService.ts
-- leaderboardService.ts
-- contentCurationService.ts
-- streakService.ts
-- biasRatingService.ts
-- xpService.ts
-- newsIntegrationService.ts
-- contentIngestionScheduler.ts
-- challengeStatsService.ts
-- adaptiveChallengeService.ts
-- challengeRepository.ts
-
-### 2. Complete Logger Migration (~50 occurrences)
+### 1. Complete Logger Migration (~17 occurrences)
 Replace all console.log/error/warn with appropriate logger calls.
 
-### 3. Apply Validation to Remaining Routes
+**Status:**
+- ✅ Production code migrated (staticFiles.ts)
+- ⏳ Script files remaining (17 occurrences in development scripts)
+  - refactor-helpers.ts (contains console detection logic)
+  - migrate-console-to-logger.ts (migration script itself)
+  - fix-route-imports.ts
+  - fix-di-issues.ts
+  - auto-refactor.ts
+
+### 2. Apply Validation to Remaining Routes
 - Auth routes
 - User routes
 - Content routes
@@ -53,12 +77,22 @@ Replace all console.log/error/warn with appropriate logger calls.
 
 ## 📋 Quick Reference
 
-### Using the Logger
+### Using the Enhanced Logger
 ```typescript
-import logger from '../utils/logger';
-logger.info('Message');
-logger.error('Error', error);
-logger.warn('Warning');
+// Context-aware logger creation
+import { LoggerFactory } from '../utils/logger';
+const logger = LoggerFactory.forService('UserService');
+
+// With metadata
+logger.info('User created', { userId: 123, email: 'user@example.com' });
+
+// Error logging with automatic error parsing
+logger.error('Operation failed', error, { operation: 'createUser' });
+
+// Performance timing
+const timer = logger.startTimer('Database query');
+// ... perform operation
+timer(); // Logs with duration
 ```
 
 ### Using Validation
@@ -75,8 +109,8 @@ const service = container.get(ServiceTokens.ServiceName);
 
 ## 🎯 Priority Order
 
-1. **High**: Remove singleton exports (breaks DI pattern)
-2. **Medium**: Complete logger migration (improves debugging)
+1. **High**: ~~Remove singleton exports~~ ✅ COMPLETED
+2. **Medium**: Complete logger migration (script files can wait)
 3. **Low**: Add validation to all routes (enhances security)
 
 See `REFACTORING_SUMMARY.md` for detailed documentation of all changes. 

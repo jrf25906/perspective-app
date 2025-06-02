@@ -1,6 +1,9 @@
 import express from 'express';
 import path from 'path';
 import { existsSync } from 'fs';
+import { LoggerFactory } from '../utils/logger';
+
+const logger = LoggerFactory.forMiddleware('staticFiles');
 
 /**
  * Static File Middleware
@@ -36,7 +39,10 @@ export function setupStaticFiles(app: express.Application): void {
         }
       }));
 
-      console.log(`📁 Serving static files from: ${absoluteUploadDir}`);
+      logger.info('Serving static files', { 
+        path: absoluteUploadDir,
+        storageType: process.env.STORAGE_TYPE || 'local'
+      });
     }
   }
 } 
