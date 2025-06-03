@@ -2,15 +2,24 @@ import Foundation
 
 // MARK: - Error Response
 
-struct ErrorResponse: Codable {
-    let error: ErrorDetail
+public struct ErrorResponse: Codable {
+    public let error: ErrorDetail
+    
+    public init(error: ErrorDetail) {
+        self.error = error
+    }
 }
 
-struct ErrorDetail: Codable {
-    let code: String?
-    let message: String
+public struct ErrorDetail: Codable {
+    public let code: String?
+    public let message: String
     
-    init(from decoder: Decoder) throws {
+    public init(code: String? = nil, message: String) {
+        self.code = code
+        self.message = message
+    }
+    
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         code = try container.decodeIfPresent(String.self, forKey: .code)
         message = try container.decode(String.self, forKey: .message)
@@ -19,7 +28,7 @@ struct ErrorDetail: Codable {
 
 // MARK: - API Error
 
-enum APIError: Error, LocalizedError {
+public enum APIError: Error, LocalizedError {
     case invalidURL
     case unauthorized
     case encodingError
@@ -32,7 +41,7 @@ enum APIError: Error, LocalizedError {
     case serverError(String)
     case unknownError(Int, String)
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid URL"
@@ -63,7 +72,7 @@ enum APIError: Error, LocalizedError {
 // MARK: - JSON Decoder Extension
 
 extension JSONDecoder {
-    static let apiDecoder: JSONDecoder = {
+    public static let apiDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
         // Don't use convertFromSnakeCase when we have custom CodingKeys
         decoder.keyDecodingStrategy = .useDefaultKeys
@@ -150,7 +159,7 @@ extension JSONDecoder {
 // MARK: - JSON Encoder Extension
 
 extension JSONEncoder {
-    static let apiEncoder: JSONEncoder = {
+    public static let apiEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         encoder.dateEncodingStrategy = .iso8601

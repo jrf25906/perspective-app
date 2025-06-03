@@ -53,7 +53,22 @@ class JSONResponseProcessor: JSONResponseProcessing {
         
         diagnostics.processingLog.append("✅ Successfully decoded as UTF-8")
         
-        // SYSTEMATIC APPROACH: Object-based field name repair
+        // First, check if this is valid JSON that doesn't need repair
+        if let jsonData = originalString.data(using: .utf8),
+           let _ = try? JSONSerialization.jsonObject(with: jsonData, options: []) {
+            // Valid JSON - check if it's an error response or other non-user response
+            if originalString.contains("\"error\"") || !originalString.contains("\"user\"") {
+                diagnostics.processingLog.append("✅ Valid JSON detected (error or non-user response), returning unchanged")
+                return ProcessedJSONResponse(
+                    cleanedData: data,
+                    originalData: data,
+                    diagnostics: diagnostics,
+                    isValid: true
+                )
+            }
+        }
+        
+        // SYSTEMATIC APPROACH: Object-based field name repair (only for user responses)
         if let cleanedData = repairJSONObject(originalString, diagnostics: &diagnostics) {
             let isValid = validateJSONStructure(cleanedData, diagnostics: &diagnostics)
             
@@ -116,7 +131,13 @@ class JSONResponseProcessor: JSONResponseProcessing {
         
         diagnostics.processingLog.append("✅ Successfully parsed as JSON object")
         
-        // Step 3: Fix the user object field names
+        // CRITICAL: Check if this is an error response - if so, return it unchanged
+        if jsonObject["error"] != nil {
+            diagnostics.processingLog.append("✅ Detected error response, returning unchanged")
+            return jsonData
+        }
+        
+        // Step 3: Fix the user object field names (only for non-error responses)
         guard var userObject = jsonObject["user"] as? [String: Any] else {
             diagnostics.processingLog.append("❌ Could not find user object")
             return nil

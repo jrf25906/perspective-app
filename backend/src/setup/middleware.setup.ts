@@ -11,6 +11,7 @@ import { validateApiResponse } from '../middleware/validateApiResponse';
 import { camelCaseRequestParser } from '../middleware/camelCaseRequestParser';
 import { networkDiagnosticMiddleware, corsViolationMiddleware } from '../middleware/networkDiagnostic';
 import { setupStaticFiles } from '../middleware/staticFiles';
+import { responseInterceptor, errorCorrelationMiddleware } from '../middleware/responseInterceptor';
 
 export function setupSecurityMiddleware(app: Express): void {
     // Helmet security middleware
@@ -56,6 +57,10 @@ export function setupBodyParsingMiddleware(app: Express): void {
 export function setupRequestMiddleware(app: Express): void {
     // Request ID and timing middleware
     app.use(requestLogger);
+    // Error correlation middleware for tracking errors
+    app.use(errorCorrelationMiddleware);
+    // Response interceptor for consistent error formatting
+    app.use(responseInterceptor);
     // Network diagnostic middleware (before other middleware to catch all requests)
     app.use(networkDiagnosticMiddleware());
     // CORS violation tracking (after CORS middleware is applied)

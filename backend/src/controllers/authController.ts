@@ -188,11 +188,25 @@ export class AuthController {
   }
 
   static async login(req: Request, res: Response) {
+    const correlationId = (req as any).correlationId || 'unknown';
+    const startTime = Date.now();
+    
     try {
       const { email, password }: LoginRequest = req.body;
 
+      logger.info('Login attempt started', {
+        correlationId,
+        email: email ? email.replace(/^(.{3}).*@/, '$1***@') : 'not provided', // Mask email
+        timestamp: new Date().toISOString()
+      });
+
       // Validate input
       if (!email || !password) {
+        logger.warn('Login validation failed: missing credentials', {
+          correlationId,
+          hasEmail: !!email,
+          hasPassword: !!password
+        });
         return res.status(400).json({
           error: {
             code: 'VALIDATION_ERROR',
@@ -202,8 +216,15 @@ export class AuthController {
       }
 
       // Find user
+      logger.debug('Looking up user by email', { correlationId, email: email.replace(/^(.{3}).*@/, '$1***@') });
       const user = await UserService.findByEmail(email);
+      
       if (!user) {
+        logger.warn('Login failed: user not found', {
+          correlationId,
+          email: email.replace(/^(.{3}).*@/, '$1***@'),
+          duration: Date.now() - startTime
+        });
         return res.status(401).json({
           error: {
             code: 'INVALID_CREDENTIALS',
@@ -212,8 +233,20 @@ export class AuthController {
         });
       }
 
+      logger.debug('User found, checking authentication method', {
+        correlationId,
+        userId: user.id,
+        hasPasswordHash: !!user.password_hash,
+        hasGoogleId: !!user.google_id
+      });
+
       // Check if user has a password (not a Google-only user)
       if (!user.password_hash) {
+        logger.warn('Login failed: user has no password (Google-only account)', {
+          correlationId,
+          userId: user.id,
+          duration: Date.now() - startTime
+        });
         return res.status(401).json({
           error: {
             code: 'INVALID_CREDENTIALS',
@@ -223,8 +256,15 @@ export class AuthController {
       }
 
       // Verify password
+      logger.debug('Verifying password', { correlationId, userId: user.id });
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      
       if (!isValidPassword) {
+        logger.warn('Login failed: invalid password', {
+          correlationId,
+          userId: user.id,
+          duration: Date.now() - startTime
+        });
         return res.status(401).json({
           error: {
             code: 'INVALID_CREDENTIALS',
@@ -233,6 +273,8 @@ export class AuthController {
         });
       }
 
+      logger.debug('Password verified, updating last activity', { correlationId, userId: user.id });
+      
       // Update last activity
       await UserService.updateLastActivity(user.id);
 
@@ -243,11 +285,25 @@ export class AuthController {
         username: user.username
       });
 
+      logger.debug('Token generated, transforming user data', { correlationId, userId: user.id });
+
       // Transform user for API response
       const transformedUser = UserTransformService.transformUserForAPI(user);
       if (!transformedUser) {
+        logger.error('Failed to transform user data', {
+          correlationId,
+          userId: user.id,
+          user: JSON.stringify(user)
+        });
         throw new Error('Failed to transform user data');
       }
+
+      logger.info('Login successful', {
+        correlationId,
+        userId: user.id,
+        username: user.username,
+        duration: Date.now() - startTime
+      });
 
       res.json({
         user: transformedUser,
@@ -255,7 +311,16 @@ export class AuthController {
       });
 
     } catch (error) {
-      logger.error('Login error:', error);
+      logger.error('Login error', {
+        correlationId,
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : error,
+        duration: Date.now() - startTime
+      });
+      
       res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',

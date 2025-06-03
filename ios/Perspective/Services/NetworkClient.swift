@@ -25,6 +25,8 @@ class NetworkClient {
         self.jsonProcessor = jsonProcessor
     }
     
+    // MARK: - CRITICAL FIX: Error-First Response Processing
+    
     func performRequest<T: Decodable>(_ request: URLRequest, responseType: T.Type) -> AnyPublisher<T, APIError> {
         // Log request details
         logRequest(request)
@@ -33,11 +35,35 @@ class NetworkClient {
             .tryMap { [weak self] data, response in
                 self?.logResponse(response, data: data)
                 
-                // Check if JSON is already valid before processing
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw APIError.invalidURL
+                }
+                
+                // ARCHITECTURAL FIX: Check for errors BEFORE attempting to decode success response
+                
+                // 1. Check HTTP status code first for error conditions
+                if httpResponse.statusCode >= 400 {
+                    // Try to decode structured error response
+                    if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                        throw self?.mapErrorResponse(errorResponse, statusCode: httpResponse.statusCode) ?? APIError.unknownError(httpResponse.statusCode, "Unknown error")
+                    } else {
+                        // Fallback for non-standard error responses
+                        let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                        throw APIError.unknownError(httpResponse.statusCode, message)
+                    }
+                }
+                
+                // 2. Even for 2xx responses, check if it contains an error structure
+                // This handles cases where backend returns 200 with error content
+                if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                    throw self?.mapErrorResponse(errorResponse, statusCode: httpResponse.statusCode) ?? APIError.unknownError(httpResponse.statusCode, "Unknown error")
+                }
+                
+                // 3. Process JSON if needed (existing logic)
+                let processedData: Data
                 if (try? JSONSerialization.jsonObject(with: data, options: [])) != nil {
                     // JSON is valid, use original data
-                    try self?.validateResponse(data: data, response: response)
-                    return data
+                    processedData = data
                 } else {
                     // Process potentially malformed JSON from backend
                     let processedResponse = self?.jsonProcessor.processResponse(data) ?? 
@@ -50,11 +76,11 @@ class NetworkClient {
                         processedResponse.logDiagnostics()
                     }
                     
-                    // Use cleaned data for validation (error detection)
-                    try self?.validateResponse(data: processedResponse.cleanedData, response: response)
-                    
-                    return processedResponse.cleanedData
+                    processedData = processedResponse.cleanedData
                 }
+                
+                // 4. Now safe to return data for success decoding
+                return processedData
             }
             .decode(type: responseType, decoder: JSONDecoder.apiDecoder)
             .mapError { [weak self] error -> APIError in
@@ -65,20 +91,11 @@ class NetworkClient {
                     // Log the request URL for context
                     print("❌ Request URL: \(request.url?.absoluteString ?? "Unknown")")
                     
-                    // Special handling for Challenge decoding errors
-                    if String(describing: responseType).contains("Challenge") {
-                        print("❌ Challenge decoding error detected")
-                        
-                        // Try to get the raw response data from earlier in the chain
-                        if let url = request.url?.absoluteString, url.contains("/challenge/today") {
-                            print("❌ Daily challenge endpoint decoding failed")
-                            print("❌ Ensure backend response matches iOS Challenge model:")
-                            print("   - type: ChallengeType enum value")
-                            print("   - content: ChallengeContent object")
-                            print("   - options: [ChallengeOption]? array")
-                            print("   - difficultyLevel: Int (not string)")
-                            print("   - dates use ISO8601 format")
-                        }
+                    // Special handling for Authentication decoding errors
+                    if String(describing: responseType).contains("AuthResponse") {
+                        print("❌ Authentication response decoding error detected")
+                        print("❌ This indicates the backend returned an error response that was classified as success")
+                        print("❌ Error-first processing should have caught this earlier")
                     }
                     
                     // Log decoding error details
@@ -107,6 +124,81 @@ class NetworkClient {
             .eraseToAnyPublisher()
     }
     
+    // Enhanced authentication-specific request method
+    func performAuthRequest<T: Decodable>(_ request: URLRequest, responseType: T.Type) -> AnyPublisher<T, APIError> {
+        // Add authentication-specific headers
+        var enhancedRequest = request
+        enhancedRequest.setValue("auth-request", forHTTPHeaderField: "X-Request-Type")
+        
+        return performRequest(enhancedRequest, responseType: responseType)
+            .catch { error -> AnyPublisher<T, APIError> in
+                // Authentication-specific error enhancement
+                let enhancedError = self.enhanceAuthenticationError(error)
+                return Fail(error: enhancedError).eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: - Enhanced Error Mapping
+
+    private func mapErrorResponse(_ errorResponse: ErrorResponse, statusCode: Int) -> APIError {
+        let message = errorResponse.error.message
+        let code = errorResponse.error.code ?? "UNKNOWN_ERROR"
+        
+        // Map specific error codes with enhanced authentication handling
+        switch code {
+        case "INVALID_CREDENTIALS":
+            return .unauthorized
+        case "USER_EXISTS":
+            return .conflict(message)
+        case "VALIDATION_ERROR":
+            return .badRequest(message)
+        case "INTERNAL_ERROR":
+            return .serverError(message)
+        case "TOO_MANY_AUTH_ATTEMPTS":
+            return .forbidden(message)
+        case "USER_NOT_FOUND":
+            return .notFound(message)
+        case "TOKEN_EXPIRED":
+            // Post notification for token refresh
+            NotificationCenter.default.post(name: .authTokenExpired, object: nil)
+            return .unauthorized
+        case "MAINTENANCE_MODE":
+            return .serverError(message)
+        default:
+            switch statusCode {
+            case 400: return .badRequest(message)
+            case 401: return .unauthorized
+            case 403: return .forbidden(message)
+            case 404: return .notFound(message)
+            case 409: return .conflict(message)
+            case 500...599: return .serverError(message)
+            default: return .unknownError(statusCode, message)
+            }
+        }
+    }
+    
+    private func enhanceAuthenticationError(_ error: APIError) -> APIError {
+        switch error {
+        case .unauthorized:
+            // Add authentication-specific context
+            NotificationCenter.default.post(name: .authTokenExpired, object: nil)
+            return error
+        case .badRequest(let message):
+            // Enhanced validation error messages for auth
+            if message.contains("email") {
+                return .badRequest("Please check your email format")
+            } else if message.contains("password") {
+                return .badRequest("Password requirements not met")
+            }
+            return error
+        default:
+            return error
+        }
+    }
+    
+    // MARK: - Existing Methods (preserved for compatibility)
+    
     func performRequest(_ request: URLRequest) -> AnyPublisher<Data, APIError> {
         // Log request details
         logRequest(request)
@@ -115,14 +207,30 @@ class NetworkClient {
             .tryMap { [weak self] data, response in
                 self?.logResponse(response, data: data)
                 
-                // Process potentially malformed JSON from backend first
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw APIError.invalidURL
+                }
+                
+                // Apply same error-first processing for raw data requests
+                if httpResponse.statusCode >= 400 {
+                    if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                        throw self?.mapErrorResponse(errorResponse, statusCode: httpResponse.statusCode) ?? APIError.unknownError(httpResponse.statusCode, "Unknown error")
+                    } else {
+                        let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+                        throw APIError.unknownError(httpResponse.statusCode, message)
+                    }
+                }
+                
+                // Even for 200 responses, check if it contains an error structure
+                if let errorResponse = try? JSONDecoder.apiDecoder.decode(ErrorResponse.self, from: data) {
+                    throw self?.mapErrorResponse(errorResponse, statusCode: httpResponse.statusCode) ?? APIError.unknownError(httpResponse.statusCode, "Unknown error")
+                }
+                
+                // Process potentially malformed JSON from backend
                 let processedResponse = self?.jsonProcessor.processResponse(data) ?? 
                     ProcessedJSONResponse(cleanedData: data, originalData: data, 
                                         diagnostics: JSONDiagnostics(originalSize: data.count, cleanedSize: data.count, issuesFound: [], processingLog: []), 
                                         isValid: true)
-                
-                // Use cleaned data for validation (error detection)
-                try self?.validateResponse(data: processedResponse.cleanedData, response: response)
                 
                 return processedResponse.cleanedData
             }
@@ -132,6 +240,8 @@ class NetworkClient {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+    
+    // MARK: - Original validation and error mapping methods (preserved)
     
     private func validateResponse(data: Data, response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
